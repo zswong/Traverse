@@ -23,14 +23,14 @@ fun StoryDetailScreen(
         topBar = {
             TopAppBar(
                 title = { Text(story.title) },
-                navigationIcon = { /* 需要时可加返回图标 */ }
+                navigationIcon = { /* Add icon if needed */ }
             )
         },
         bottomBar = {
             Surface(tonalElevation = 2.dp) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Button(onClick = onAddToStory) { Text("Add to Story") }
-                    // 可加 Camera/Gallery 的入口按钮（Phase-1 先在编辑页占位）
+                    //  Camera/Gallery entry button（Phase-1 not need）
                 }
             }
         }
