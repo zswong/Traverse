@@ -1,0 +1,4 @@
+# Files not to be in version control
+.gradle
+.kotlin/sessions
+local.properties
