@@ -2,3 +2,4 @@
 .gradle
 .kotlin/sessions
 local.properties
+.idea/misc.xml
