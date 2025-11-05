@@ -40,7 +40,7 @@ data class MemoryEntity(
      * The memory contents.
      * May be the memory text or a URL pointing to an image stored on the phone's file system.
      */
-    @ColumnInfo(name = "timestamp")
+    @ColumnInfo(name = "contents")
     val contents: String
 
 )

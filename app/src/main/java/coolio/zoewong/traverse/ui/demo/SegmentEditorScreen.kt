@@ -5,12 +5,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SegmentEditorScreen(
     onCancel: () -> Unit,
     onSubmit: (String) -> Unit
+) = SegmentEditorScreen(
+    onCancel = onCancel,
+    onSubmit = { text, _ -> onSubmit(text) }
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SegmentEditorScreen(
+    onCancel: () -> Unit,
+    onSubmit: (String, Uri? ) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
 
@@ -34,7 +45,7 @@ fun SegmentEditorScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onCancel) { Text("Cancel") }
-                Button(onClick = { if (text.isNotBlank()) onSubmit(text) }) { Text("Add to Story") }
+                Button(onClick = { if (text.isNotBlank()) onSubmit(text,null) }) { Text("Add to Story") }
             }
         }
     }
