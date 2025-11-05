@@ -58,7 +58,7 @@ fun AppShell(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     title = { Text(currentTitle) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {

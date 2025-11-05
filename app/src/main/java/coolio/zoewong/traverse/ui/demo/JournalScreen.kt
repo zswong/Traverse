@@ -55,7 +55,7 @@ fun JournalScreen(
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        // 底部输入区
+
         Surface(shadowElevation = 6.dp) {
             Row(
                 Modifier.fillMaxWidth().padding(12.dp),

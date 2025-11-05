@@ -21,7 +21,7 @@ fun StoryDetailScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(story.title) },
                 navigationIcon = { /* Add icon if needed */ }
             )
