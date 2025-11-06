@@ -48,6 +48,8 @@ class TraverseDemoActivity : ComponentActivity() {
             stories += seed("Sad Day! Mish Mish Gone", null)
             stories += seed("Passed Driving Test!", null)
             stories += seed("Stanley Park Vancouver", "Vancouver")
+            stories += seed("Stanley Park Vancouver", "Vancouver")
+            stories += seed("Stanley Park Vancouver", "Vancouver")
         }
 
         setContent {
