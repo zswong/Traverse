@@ -68,7 +68,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                     listOf(
                                         ChatMsg(1, "Walked from Pacific Center to this cafe and had the most delicious French Toast ever!!!!", null),
                                         ChatMsg(2, null, R.drawable.coffee),
-                                        ChatMsg(3, "Later... doughnuts. Delicious!", null),
+                                        ChatMsg(3, "Later... doughnuts. Delicious! And of course one more coffee!", null),
                                         ChatMsg(4, null, R.drawable.coffeewithdonuts),
                                     )
                                 )
