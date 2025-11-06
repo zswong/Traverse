@@ -28,7 +28,12 @@ fun StoryDetailScreen(
         },
         bottomBar = {
             Surface(tonalElevation = 2.dp) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Button(onClick = onAddToStory) { Text("Add to Story") }
                     //  Camera/Gallery entry button（Phase-1 not need）
                 }
@@ -43,16 +48,32 @@ fun StoryDetailScreen(
             item {
                 Column {
                     if (!story.location.isNullOrBlank())
-                        Text(story.location!!, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-                    val date = SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault()).format(Date(story.dateMillis))
+                        Text(
+                            story.location!!,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    val date = SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault()).format(
+                        Date(story.dateMillis)
+                    )
                     Text(date, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             items(story.segments, key = { it.id }) { seg ->
                 Card {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("9:30", style = MaterialTheme.typography.labelLarge) // 视觉锚点，PDF 有“9:30”
-                        Text("Journal", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Column(
+                        Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "9:30",
+                            style = MaterialTheme.typography.labelLarge
+                        ) // 视觉锚点，PDF 有“9:30”
+                        Text(
+                            "Journal",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
                         Text(seg.text, style = MaterialTheme.typography.bodyMedium)
                     }
                 }

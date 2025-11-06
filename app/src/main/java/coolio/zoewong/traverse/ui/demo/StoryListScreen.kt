@@ -12,13 +12,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.ui.effect.fadingEdge
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,17 +42,32 @@ fun StoryListScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                modifier = Modifier.padding(padding),
+                modifier = Modifier
+                    .padding(padding)
+                    .fadingEdge(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.3f to Color.Red,
+                            0.7f to Color.Red,
+                            1f to Color.Transparent
+                        )
+                    ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(stories, key = { it.id }) { story ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().border(1.dp, Color.Black, RoundedCornerShape(16.dp)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(16.dp)),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         onClick = { onOpen(story.id) }) {
                         Column(Modifier.fillMaxSize()) {
-                            Column(Modifier.fillMaxWidth().padding(12.dp))
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp)
+                            )
                             {
                                 Text(
                                     story.title,
@@ -56,65 +75,37 @@ fun StoryListScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(Modifier.height(4.dp))
-                                val formattedDate = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(story.dateMillis))
+                                val formattedDate =
+                                    SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(
+                                        Date(story.dateMillis)
+                                    )
                                 Text(formattedDate, style = MaterialTheme.typography.bodyMedium)
                             }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(150.dp)
-                                .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                                .background(Color(0xFFE0E0E0))
-                        ) {
-                            if (!story.coverUri.isNullOrBlank()) {
-                                AsyncImage(
-                                    model = story.coverUri,
-                                    contentDescription = "Story cover",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                                    .clip(
+                                        RoundedCornerShape(
+                                            bottomStart = 16.dp,
+                                            bottomEnd = 16.dp
+                                        )
+                                    )
+                                    .background(Color(0xFFE0E0E0))
+                            ) {
+                                if (!story.coverUri.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = story.coverUri,
+                                        contentDescription = "Story cover",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                             }
-                        }
                         }
                     }
                 }
             }
-            
-            // Top fade overlay for scrollable content
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.background,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
-            
-            // Bottom fade overlay for scrollable content
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-            )
         }
     }
 }
