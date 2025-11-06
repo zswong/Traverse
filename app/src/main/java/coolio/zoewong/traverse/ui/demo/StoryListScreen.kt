@@ -47,8 +47,8 @@ fun StoryListScreen(
                     .fadingEdge(
                         Brush.verticalGradient(
                             0f to Color.Transparent,
-                            0.3f to Color.Red,
-                            0.7f to Color.Red,
+                            0.05f to Color.Red,
+                            0.95f to Color.Red,
                             1f to Color.Transparent
                         )
                     ),
