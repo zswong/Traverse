@@ -7,6 +7,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +34,9 @@ import coolio.zoewong.traverse.ui.demo.CreateStoryScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 
 class TraverseDemoActivity : ComponentActivity() {
@@ -56,15 +65,24 @@ class TraverseDemoActivity : ComponentActivity() {
             MaterialTheme {
                 val nav = rememberNavController()
                 var currentTitle by remember { mutableStateOf("Journal") }
+                var currentSubtitle by remember { mutableStateOf<String?>(null) }
+                var customNavigationIcon by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
+                var customActions by remember { mutableStateOf<(@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)?>(null) }
 
                 AppShell(
                     nav = nav,
-                    currentTitle = currentTitle
+                    currentTitle = currentTitle,
+                    subtitle = currentSubtitle,
+                    navigationIcon = customNavigationIcon,
+                    actions = customActions
                 ) {
                     NavHost(navController = nav, startDestination = "journal") {
 
                         composable("journal") {
                             currentTitle = "Journal"
+                            currentSubtitle = null
+                            customNavigationIcon = null
+                            customActions = null
                             var msgs by remember {
                                 mutableStateOf(
                                     listOf(
@@ -86,6 +104,9 @@ class TraverseDemoActivity : ComponentActivity() {
 
                         composable("list") {
                             currentTitle = "My Stories"
+                            currentSubtitle = null
+                            customNavigationIcon = null
+                            customActions = null
                             StoryListScreen(
                                 stories = stories,
                                 onOpen = { id -> nav.navigate("detail/$id") },
@@ -95,6 +116,9 @@ class TraverseDemoActivity : ComponentActivity() {
 
                         composable("create") {
                             currentTitle = "Create Story"
+                            currentSubtitle = null
+                            customNavigationIcon = null
+                            customActions = null
                             CreateStoryScreen(
                                 onCancel = { nav.popBackStack() },
                                 onCreate = { title, location ->
@@ -107,6 +131,9 @@ class TraverseDemoActivity : ComponentActivity() {
 
                         composable("settings") {
                             currentTitle = "Settings"
+                            currentSubtitle = null
+                            customNavigationIcon = null
+                            customActions = null
                             Surface {
                                 Text("Settings (coming soon)", modifier = Modifier.padding(24.dp))
                             }
@@ -118,6 +145,33 @@ class TraverseDemoActivity : ComponentActivity() {
                         ) { backStack ->
                             val id = backStack.arguments!!.getLong("id")
                             val story = stories.first { it.id == id }
+                            
+                            currentTitle = story.title
+                            currentSubtitle = SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
+                                .format(Date(story.dateMillis))
+                            customNavigationIcon = {
+                                IconButton(onClick = { nav.popBackStack() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
+                                }
+                            }
+                            customActions = {
+                                IconButton(onClick = { /* TODO: Location action */ }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.LocationOn,
+                                        contentDescription = "Location"
+                                    )
+                                }
+                                IconButton(onClick = { /* TODO: Menu action */ }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.MoreVert,
+                                        contentDescription = "More options"
+                                    )
+                                }
+                            }
+                            
                             StoryDetailScreen(
                                 story = story,
                                 onBack = { nav.popBackStack() },

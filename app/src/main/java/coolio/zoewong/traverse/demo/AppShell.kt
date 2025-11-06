@@ -2,6 +2,7 @@
 
 package coolio.zoewong.traverse.ui.demo
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -23,6 +24,9 @@ enum class DrawerDest(val route: String, val label: String) {
 fun AppShell(
     nav: NavController,
     currentTitle: String,
+    subtitle: String? = null,
+    navigationIcon: @Composable (() -> Unit)? = null,
+    actions: @Composable (RowScope.() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -59,13 +63,32 @@ fun AppShell(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text(currentTitle) },
-                    navigationIcon = {
+                    title = {
+                        if (subtitle != null) {
+                            androidx.compose.foundation.layout.Column(
+                                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = currentTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            Text(currentTitle)
+                        }
+                    },
+                    navigationIcon = navigationIcon ?: {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "menu")
                         }
                     },
-                    actions = {
+                    actions = actions ?: {
                         IconButton(onClick = { /* TODO overflow */ }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "more")
                         }
