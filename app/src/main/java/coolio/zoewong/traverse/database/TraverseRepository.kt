@@ -38,18 +38,18 @@ class TraverseRepository(private val database: TraverseDatabase) {
     /**
      * Gets the previous N (count) MemoryEntity instances to the given id.
      */
-    suspend fun getPreviousMemories(id: Long, count: Long): List<MemoryEntity> {
+    suspend fun getPreviousMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
         return withContext(IO) {
-            access.getPreviousMemories(id, count)
+            access.getPreviousMemories(relativeTo.id, count)
         }
     }
 
     /**
      * Gets the next N (count) MemoryEntity instances to the given id.
      */
-    suspend fun getNextMemories(id: Long, count: Long): List<MemoryEntity> {
+    suspend fun getNextMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
         return withContext(IO) {
-            access.getNextMemories(id, count)
+            access.getNextMemories(relativeTo.id, count)
         }
     }
 
