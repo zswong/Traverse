@@ -1,16 +1,19 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package coolio.zoewong.traverse.demo
 
+import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +27,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import coolio.zoewong.traverse.R
+import coolio.zoewong.traverse.database.MemoryEntity
+import coolio.zoewong.traverse.database.MemoryType
 import coolio.zoewong.traverse.model.Segment
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.ui.demo.AppShell
@@ -36,8 +40,9 @@ import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
-import coolio.zoewong.traverse.ui.state.DatabaseStateProvider
-import coolio.zoewong.traverse.ui.state.LoadStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,7 +89,7 @@ class TraverseDemoActivity : ComponentActivity() {
                     )
                 }
                 var customActions by remember {
-                    mutableStateOf<(@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)?>(
+                    mutableStateOf<(@Composable RowScope.() -> Unit)?>(
                         null
                     )
                 }
@@ -104,21 +109,51 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
-                                var msgs by remember {
-                                    mutableStateOf(
-                                        listOf(
-                                            ChatMsg(1, "Walked from Pacific Center to this cafe and had the most delicious French Toast ever!!!!", null),
-                                            ChatMsg(2, null, R.drawable.coffee),
-                                            ChatMsg(3, "Later... doughnuts. Delicious! And of course one more coffee!", null),
-                                            ChatMsg(4, null, R.drawable.coffeewithdonuts),
-                                        )
-                                    )
+                                var msgs by remember { mutableStateOf(listOf<ChatMsg>()) }
+                                val dbstate = DatabaseState.current
+                                dbstate.whenReady { db ->
+                                    LaunchedEffect(db) {
+                                        db.watchMemories().collect { entities ->
+                                            msgs = entities.map {
+                                                ChatMsg(it.id, it.contents, null)
+                                                // TODO: Use a URL instead of resource
+                                            }
+                                        }
+                                    }
                                 }
+
                                 JournalScreen(
                                     messages = msgs,
                                     onSend = { text, resId ->
-                                        val nextId = (msgs.maxOfOrNull { it.id } ?: 0L) + 1
-                                        msgs = msgs + ChatMsg(nextId, text, resId)
+                                        // TODO: Image URL instead of resource
+
+                                        // CoroutineScope is only safe when not used directly inside
+                                        // a @Composable function, as it will repeatedly call it
+                                        // every time the composable is recomposed.
+                                        //
+                                        // It is safe here because onSend is only run once in
+                                        // response to use interaction.
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            val memory = when {
+                                                text != null -> MemoryEntity(
+                                                        type = MemoryType.TEXT,
+                                                        timestamp = Calendar.getInstance().time.time,
+                                                        contents = text,
+                                                    )
+                                                resId != null ->
+                                                    MemoryEntity(
+                                                        type = MemoryType.TEXT,
+                                                        timestamp = Calendar.getInstance().time.time,
+                                                        contents = "<TODO images>",
+                                                        // TODO: Replace with image URL
+                                                    )
+                                                else -> throw IllegalArgumentException("No message or image?")
+                                            }
+
+                                            dbstate.waitForReady().apply {
+                                                insertMemory(memory)
+                                            }
+                                        }
                                     }
                                 )
                             }
