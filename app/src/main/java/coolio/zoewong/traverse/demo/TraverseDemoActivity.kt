@@ -40,6 +40,7 @@ import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
+import coolio.zoewong.traverse.ui.state.LoadStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -120,6 +121,14 @@ class TraverseDemoActivity : ComponentActivity() {
                                             }
                                         }
                                     }
+                                }
+
+                                if (dbstate.status != LoadStatus.LOADED) {
+                                    // Simple example of showing a loading placeholder.
+                                    Surface {
+                                        Text("Loading...")
+                                    }
+                                    return@composable
                                 }
 
                                 JournalScreen(
