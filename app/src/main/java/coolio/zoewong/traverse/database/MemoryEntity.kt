@@ -27,7 +27,7 @@ data class MemoryEntity(
      * May be "text" or "image".
      */
     @ColumnInfo(name = "type")
-    val type: Int,
+    val type: MemoryType,
 
     /**
      * The timestamp of when the memory was created.
