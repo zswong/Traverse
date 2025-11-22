@@ -51,6 +51,12 @@ interface TraverseDatabaseAccessObject {
     suspend fun deleteMemory(id: Long)
 
     /**
+     * Returns the number of MemoryEntities in the database.
+     */
+    @Query("SELECT COUNT(*) FROM memories")
+    suspend fun countMemories(): Long
+
+    /**
      * Returns a flow emitting the timestamp of the oldest MemoryEntity in the database.
      * This can be used to get the oldest memory in the database.
      */
