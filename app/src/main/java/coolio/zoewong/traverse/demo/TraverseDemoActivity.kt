@@ -39,9 +39,12 @@ import coolio.zoewong.traverse.ui.demo.CreateStoryScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
+import coolio.zoewong.traverse.ui.demo.SettingsScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
+import coolio.zoewong.traverse.ui.theme.ThemeManager
+import coolio.zoewong.traverse.ui.theme.TraverseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,6 +60,7 @@ class TraverseDemoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.loadTheme(this)
 
         if (stories.isEmpty()) {
             fun seed(title: String, location: String?): Story {
@@ -81,7 +85,7 @@ class TraverseDemoActivity : ComponentActivity() {
         }
 
         setContent {
-            MaterialTheme {
+            TraverseTheme{
                 val nav = rememberNavController()
                 var currentTitle by remember { mutableStateOf("Journal") }
                 var currentSubtitle by remember { mutableStateOf<String?>(null) }
@@ -202,9 +206,9 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
-                                Surface {
-                                    Text("Settings (coming soon)", modifier = Modifier.padding(24.dp))
-                                }
+                                SettingsScreen(
+                                    onBack = { nav.popBackStack() }
+                                )
                             }
 
                             composable(

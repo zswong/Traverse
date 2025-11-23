@@ -89,7 +89,7 @@ fun StoryListScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, Color.Black, RoundedCornerShape(16.dp)),
+                                .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                             onClick = { onOpen(story.id) }
