@@ -20,6 +20,7 @@ class RepositoryMemoryEntityTests {
     val now = 1762239623283
 
     @Rule
+    @JvmField
     var tempdir: TemporaryFolder = TemporaryFolder()
 
     /**
