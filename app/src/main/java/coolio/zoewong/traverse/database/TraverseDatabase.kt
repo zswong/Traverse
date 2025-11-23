@@ -18,7 +18,8 @@ import androidx.room.RoomDatabase
     ]
 )
 abstract class TraverseDatabase : RoomDatabase() {
-    abstract val access: TraverseDatabaseAccessObject
+    abstract val storySegments: StorySegmentAccess
+    abstract val memories: MemoryAccess
 
     companion object {
 
