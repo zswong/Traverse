@@ -60,7 +60,7 @@ fun StoryListScreen(
                     .padding(padding)
                     .fillMaxSize()
             ) {
-                
+
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
