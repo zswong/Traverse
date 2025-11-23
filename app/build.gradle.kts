@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.documentfile)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
