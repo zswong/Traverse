@@ -40,6 +40,7 @@ import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
 import coolio.zoewong.traverse.ui.demo.SettingsScreen
+import coolio.zoewong.traverse.ui.demo.MapScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
@@ -184,6 +185,13 @@ class TraverseDemoActivity : ComponentActivity() {
                                     onOpen = { id -> nav.navigate("detail/$id") },
                                     onCreate = { nav.navigate("create") }
                                 )
+                            }
+                            composable("map") {
+                                currentTitle = "Map"
+                                currentSubtitle = null
+                                customNavigationIcon = null
+                                customActions = null
+                                MapScreen()
                             }
 
                             composable("create") {

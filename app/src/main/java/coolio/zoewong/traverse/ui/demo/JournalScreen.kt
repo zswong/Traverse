@@ -27,6 +27,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import coolio.zoewong.traverse.ui.state.DatabaseState
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 data class ChatMsg(val id: Long, val text: String?, @DrawableRes val imageRes: Int?)
 
@@ -76,9 +77,11 @@ fun JournalScreen(
                     Icon(Icons.Outlined.AttachFile, contentDescription = "attach")
                 }
                 OutlinedTextField(
-                    value = input, onValueChange = { input = it },
+                    value = input,
+                    onValueChange = { input = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Your message...") }
+                    placeholder = { Text("Your message...") },
+                    shape = RoundedCornerShape(23.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = {

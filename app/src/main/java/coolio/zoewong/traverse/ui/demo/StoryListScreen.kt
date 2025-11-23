@@ -28,6 +28,7 @@ import java.util.Date
 import java.util.Locale
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoryListScreen(
@@ -67,6 +68,7 @@ fun StoryListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(23.dp),
                     label = { Text("Search stories") },
                     singleLine = true
                 )
