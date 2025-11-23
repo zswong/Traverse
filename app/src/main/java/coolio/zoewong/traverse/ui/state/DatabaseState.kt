@@ -3,6 +3,7 @@ package coolio.zoewong.traverse.ui.state
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,19 +25,19 @@ import kotlinx.coroutines.withContext
  *
  *     @Composable
  *     fun MyComponent() {
- *         val memories = remember { mutableStateOf(listOf<MemoryEntity>()) }
- *         DatabaseState.current.whenReady { db ->
- *             memories = // ...
+ *         val memories = rememberWhenDatabaseReady(
+ *             initial = { listOf<MemoryEntity>() },
+ *             calculation = { db ->
+ *                 return getAllMemories(db)
+ *             }
+ *         )
+ *
+ *         if (memories == null) {
+ *             // Show a loading indicator
+ *             return
  *         }
  *
- *         when (DatabaseState.current.status) {
- *             LoadStatus.LOADED -> {
- *                 // Show data from the database
- *             }
- *             else -> {
- *                 // Show a loading indicator
- *             }
- *         }
+ *         // Show memories
  *     }
  *
  * See: https://developer.android.com/develop/ui/compose/compositionlocal
@@ -134,5 +135,99 @@ data class DatabaseStateAccessor(
      */
     suspend fun waitForReady(): TraverseRepository {
         return _waitForReady()
+    }
+}
+
+/**
+ * Performs a calculation based on whether the database is ready, changing it when the
+ * database is done loading.
+ *
+ * The calculation will persist through recompositions.
+ */
+@Composable
+inline fun <T> rememberDatabaseStateChanges(
+    vararg keys: Any?,
+    crossinline calculation: @DisallowComposableCalls (state: DatabaseStateAccessor) -> T,
+): T {
+    val dbstate = DatabaseState.current // Causes recomposition when when DatabaseState changes.
+
+    val (remembered, setRemembered) = remember(keys = keys) {
+        mutableStateOf(
+            dbstate.status to calculation(
+                dbstate
+            )
+        )
+    }
+
+    var (lastStatus, result) = remembered
+    if (lastStatus != dbstate.status) {
+        result = calculation(dbstate)
+        setRemembered(dbstate.status to result)
+    }
+
+    return result
+}
+
+/**
+ * Returns null if the database is not ready, otherwise runs the given calculation.
+ *
+ * Usage:
+ *
+ *     @Composable
+ *     fun MyComponent() {
+ *         val memories = rememberWhenDatabaseReady { db ->
+ *             return getAllMemories(db)
+ *         }
+ *
+ *         memories?.let {
+ *             // Show data from the database
+ *         }
+ *     }
+ *
+ * The calculation will persist through recompositions.
+ */
+@Composable
+inline fun <T> rememberWhenDatabaseReady(
+    vararg keys: Any?,
+    crossinline calculation: @DisallowComposableCalls (db: TraverseRepository) -> T,
+): T? {
+    return rememberDatabaseStateChanges(keys = keys) {
+        when (it.status) {
+            LoadStatus.LOADED -> calculation(it.database)
+            else -> null
+        }
+    }
+}
+
+/**
+ * Returns the initial value if the database is not ready, otherwise runs the given calculation.
+ *
+ * Usage:
+ *
+ *     @Composable
+ *     fun MyComponent() {
+ *         val memories = rememberWhenDatabaseReady(
+ *             initial = { listOf<MemoryEntity>() },
+ *             calculation = { db ->
+ *                 return getAllMemories(db)
+ *             }
+ *         )
+ *
+ *         // Show memories
+ *     }
+ *
+ * The calculation will persist through recompositions.
+ */
+@Composable
+inline fun <T> rememberWhenDatabaseReady(
+    vararg keys: Any?,
+    crossinline initial: @DisallowComposableCalls () -> T,
+    crossinline calculation: @DisallowComposableCalls (db: TraverseRepository) -> T,
+): T {
+    return rememberDatabaseStateChanges(keys = keys) {
+        when (it.status) {
+            LoadStatus.LOADED -> calculation(it.database)
+            else -> initial()
+        }
     }
 }
