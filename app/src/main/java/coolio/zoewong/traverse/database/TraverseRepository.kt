@@ -18,7 +18,8 @@ class TraverseRepository(
     private val database: TraverseDatabase,
     private val mediaStore: TraverseMedia,
 ) {
-    private val access = database.access
+    private val storySegments = database.storySegments
+    private val memories = database.memories
 
     /**
      * The media store for Traverse.
@@ -30,7 +31,7 @@ class TraverseRepository(
      */
     suspend fun getMemory(id: Long): MemoryEntity? {
         return withContext(IO) {
-            access.getMemory(id)
+            memories.get(id)
         }
     }
 
@@ -39,7 +40,7 @@ class TraverseRepository(
      */
     suspend fun getMemoriesBetween(from: Long, to: Long): List<MemoryEntity> {
         return withContext(IO) {
-            access.getMemoriesBetween(from, to)
+            memories.getBetween(from, to)
         }
     }
 
@@ -48,7 +49,7 @@ class TraverseRepository(
      */
     suspend fun getPreviousMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
         return withContext(IO) {
-            access.getPreviousMemories(relativeTo.id, count)
+            memories.getPrevious(relativeTo.id, count)
         }
     }
 
@@ -57,7 +58,7 @@ class TraverseRepository(
      */
     suspend fun getNextMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
         return withContext(IO) {
-            access.getNextMemories(relativeTo.id, count)
+            memories.getNext(relativeTo.id, count)
         }
     }
 
@@ -67,7 +68,7 @@ class TraverseRepository(
      */
     suspend fun insertMemory(memory: MemoryEntity): MemoryEntity {
         return withContext(IO) {
-            val id = access.insertMemory(memory)
+            val id = memories.insert(memory)
             memory.copy(id = id)
         }
     }
@@ -77,7 +78,7 @@ class TraverseRepository(
      */
     suspend fun deleteMemory(id: Long) {
         return withContext(IO) {
-            access.deleteMemory(id)
+            memories.delete(id)
         }
     }
 
@@ -93,7 +94,7 @@ class TraverseRepository(
      * after the provided timestamp (inclusive).
      */
     suspend fun watchMemoriesSince(timestamp: Long): Flow<List<MemoryEntity>> {
-        return database.access.watchMemoriesSince(timestamp)
+        return database.memories.watchSince(timestamp)
             .flowOn(IO)
     }
 
@@ -105,7 +106,7 @@ class TraverseRepository(
      * Prefer only fetching what is needed by using getMemoriesBetween or watchMemoriesSince.
      */
     suspend fun watchMemories(): Flow<List<MemoryEntity>> {
-        return database.access.watchMemories()
+        return database.memories.watchAll()
             .flowOn(IO)
     }
 
@@ -114,7 +115,7 @@ class TraverseRepository(
      * This can be used to get the oldest memory in the database.
      */
     suspend fun watchOldestMemoryTimestamp(): Flow<Long> {
-        return database.access.watchOldestMemoryTimestamp()
+        return database.memories.watchOldestTimestamp()
             .flowOn(IO)
     }
 
@@ -123,7 +124,7 @@ class TraverseRepository(
      * This can be used to track if a new memory was added.
      */
     suspend fun watchNewestMemoryTimestamp(): Flow<Long> {
-        return database.access.watchNewestMemoryTimestamp()
+        return database.memories.watchNewestTimestamp()
             .flowOn(IO)
     }
     // -------- Story segments --------
@@ -133,7 +134,7 @@ class TraverseRepository(
      */
     suspend fun insertStorySegment(segment: StorySegmentEntity): StorySegmentEntity {
         return withContext(IO) {
-            val id = access.insertStorySegment(segment)
+            val id = storySegments.insertStorySegment(segment)
             segment.copy(id = id)
         }
     }
@@ -142,7 +143,7 @@ class TraverseRepository(
      * Watches all segments for a given story.
      */
     suspend fun watchStorySegments(storyId: Long): Flow<List<StorySegmentEntity>> {
-        return access.watchStorySegmentsForStory(storyId)
+        return storySegments.watchStorySegmentsForStory(storyId)
             .flowOn(IO)
     }
 
