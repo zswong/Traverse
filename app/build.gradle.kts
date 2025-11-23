@@ -75,4 +75,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.kotlinx.coroutines.test)
 
+    // Accompanist
+    implementation(libs.accompanist.permissions)
+
 }

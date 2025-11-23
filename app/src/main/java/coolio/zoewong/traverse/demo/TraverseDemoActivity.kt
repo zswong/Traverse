@@ -21,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -110,6 +111,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
+                                val context = LocalContext.current
                                 var msgs by remember { mutableStateOf(listOf<ChatMsg>()) }
                                 val dbstate = DatabaseState.current
                                 dbstate.whenReady { db ->
@@ -133,7 +135,7 @@ class TraverseDemoActivity : ComponentActivity() {
 
                                 JournalScreen(
                                     messages = msgs,
-                                    onSend = { text, resId ->
+                                    onSend = { text, uri ->
                                         // TODO: Image URL instead of resource
 
                                         // CoroutineScope is only safe when not used directly inside
@@ -149,13 +151,14 @@ class TraverseDemoActivity : ComponentActivity() {
                                                         timestamp = Calendar.getInstance().time.time,
                                                         contents = text,
                                                     )
-                                                resId != null ->
+                                                uri != null -> {
+                                                    val savedUri = dbstate.database.media.saveImage(context, uri)
                                                     MemoryEntity(
-                                                        type = MemoryType.TEXT,
+                                                        type = MemoryType.IMAGE,
                                                         timestamp = Calendar.getInstance().time.time,
-                                                        contents = "<TODO images>",
-                                                        // TODO: Replace with image URL
+                                                        contents = savedUri.toString(),
                                                     )
+                                                }
                                                 else -> throw IllegalArgumentException("No message or image?")
                                             }
 
