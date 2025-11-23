@@ -2,6 +2,11 @@
 
 package coolio.zoewong.traverse.ui.demo
 
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,13 +21,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.annotation.DrawableRes
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import coolio.zoewong.traverse.ui.state.DatabaseState
 
 data class ChatMsg(val id: Long, val text: String?, @DrawableRes val imageRes: Int?)
 
 @Composable
 fun JournalScreen(
     messages: List<ChatMsg>,
-    onSend: (String?, Int?) -> Unit
+    onSend: (String?, Uri?) -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
@@ -83,8 +94,8 @@ fun JournalScreen(
     if (showAttach) {
         AttachmentSheet(
             onDismiss = { showAttach = false },
-            onPick = { resId ->
-                onSend(null, resId)
+            onPick = { uri ->
+                onSend(null, uri)
                 showAttach = false
             }
         )
@@ -94,7 +105,7 @@ fun JournalScreen(
 @Composable
 private fun AttachmentSheet(
     onDismiss: () -> Unit,
-    onPick: (Int) -> Unit
+    onPick: (Uri) -> Unit
 ) {
 
     val candidates = listOf(
@@ -104,20 +115,77 @@ private fun AttachmentSheet(
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Pick a photo", style = MaterialTheme.typography.titleMedium)
-            candidates.forEach { res ->
-                Surface(
-                    tonalElevation = 2.dp,
-                    shape = MaterialTheme.shapes.large,
-                    modifier = Modifier.fillMaxWidth().clickable { onPick(res) }
-                ) {
-                    AsyncImage(
-                        model = res,
-                        contentDescription = "candidate",
-                        modifier = Modifier.fillMaxWidth().height(140.dp).clip(MaterialTheme.shapes.large)
-                    )
-                }
-            }
+
+            AttachmentSheetItemTakePhoto(onPick = onPick)
             Spacer(Modifier.height(16.dp))
         }
     }
 }
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+private fun AttachmentSheetItemTakePhoto(
+    onPick: (Uri) -> Unit
+) {
+    val context = LocalContext.current
+    var cameraPhotoURI by rememberSaveable {
+        mutableStateOf<Uri?>(null)
+    }
+
+    val takePictureResult = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { ok ->
+            if (ok) {
+                cameraPhotoURI?.let {
+                    onPick(it)
+                }
+            }
+        },
+    )
+
+    fun takePicture() {
+        val uri = cameraPhotoURI
+        if (uri == null) {
+            Toast.makeText(context, "Database is not loaded yet.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        takePictureResult.launch(uri)
+    }
+
+    val cameraPermission = rememberPermissionState(
+        android.Manifest.permission.CAMERA,
+        onPermissionResult = { granted ->
+            if (granted) {
+                takePicture()
+            }
+        }
+    )
+
+    fun askForPermissionThenTakePicture() {
+        cameraPermission.launchPermissionRequest() // calls takePicture if granted
+    }
+
+    DatabaseState.current.whenReady { db ->
+        if (cameraPhotoURI == null) {
+            cameraPhotoURI = db.media.uriForIntentResult(context, "camera-photo")
+            Log.d("AttachmentSheetItemTakePhoto", "Photo should be saved to $cameraPhotoURI")
+        }
+    }
+
+    Surface(
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                when (cameraPermission.status.isGranted) {
+                    true -> takePicture()
+                    false -> askForPermissionThenTakePicture()
+                }
+            }
+    ) {
+        Text("Camera")
+    }
+}
+

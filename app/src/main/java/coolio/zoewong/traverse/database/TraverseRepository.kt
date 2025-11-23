@@ -14,8 +14,16 @@ import kotlinx.coroutines.withContext
  *
  * All suspend functions and flow producers will be executed on an IO thread.
  */
-class TraverseRepository(private val database: TraverseDatabase) {
+class TraverseRepository(
+    private val database: TraverseDatabase,
+    private val mediaStore: TraverseMedia,
+) {
     private val access = database.access
+
+    /**
+     * The media store for Traverse.
+     */
+    val media = mediaStore
 
     /**
      * Gets the MemoryEntity for the given ID.
@@ -142,7 +150,10 @@ class TraverseRepository(private val database: TraverseDatabase) {
         }
 
         private fun createInstance(context: Context): TraverseRepository {
-            return TraverseRepository(TraverseDatabase.getInstance(context))
+            return TraverseRepository(
+                database = TraverseDatabase.getInstance(context),
+                mediaStore = TraverseMedia.createInstance(context.filesDir.toPath())
+            )
         }
 
     }

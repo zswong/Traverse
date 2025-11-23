@@ -2,11 +2,12 @@ package coolio.zoewong.traverse.database
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
-
+import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
-import org.junit.Assert.*
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -18,13 +19,15 @@ class RepositoryMemoryEntityTests {
     /** Fixed time to use for timestamp instead of actual time. */
     val now = 1762239623283
 
+    @Rule
+    var tempdir: TemporaryFolder = TemporaryFolder()
+
     /**
      * Tests: insertMemory(MemoryEntity)
      */
     @Test
     fun insertingMemories() = runTest {
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             repo.insertMemory(
@@ -52,8 +55,7 @@ class RepositoryMemoryEntityTests {
      */
     @Test
     fun deletingMemoriesByID() = runTest {
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             val memory = repo.insertMemory(
@@ -74,8 +76,7 @@ class RepositoryMemoryEntityTests {
      */
     @Test
     fun deletingMemoriesByObject() = runTest {
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             val memory = repo.insertMemory(
@@ -104,8 +105,7 @@ class RepositoryMemoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 5000, contents = "message 5"),
         )
 
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             memories.forEach { repo.insertMemory(it) }
@@ -128,8 +128,7 @@ class RepositoryMemoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 5000, contents = "message 5"),
         )
 
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             memories.forEach { repo.insertMemory(it) }
@@ -154,8 +153,7 @@ class RepositoryMemoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 5000, contents = "message 5"),
         )
 
-        withTemporaryDatabase { db ->
-            val repo = TraverseRepository(db)
+        withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.access.countMemories())
 
             memories.forEach { repo.insertMemory(it) }
