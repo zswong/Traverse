@@ -89,14 +89,4 @@ interface MemoryAccess {
     @Query("SELECT * FROM memories")
     fun watchAll(): Flow<List<MemoryEntity>>
 
-
-    @Insert
-    suspend fun insertStorySegment(segment: StorySegmentEntity): Long
-
-    @Query(
-        "SELECT * FROM story_segments " +
-                "WHERE story_id = :storyId " +
-                "ORDER BY created_at ASC"
-    )
-    fun watchStorySegmentsForStory(storyId: Long): Flow<List<StorySegmentEntity>>
 }
