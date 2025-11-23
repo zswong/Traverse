@@ -35,7 +35,6 @@ import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.ui.demo.AppShell
 import coolio.zoewong.traverse.ui.demo.ChatMsg
 import coolio.zoewong.traverse.ui.demo.JournalScreen
-import coolio.zoewong.traverse.ui.demo.CreateStoryScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
@@ -194,20 +193,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                 MapScreen()
                             }
 
-                            composable("create") {
-                                currentTitle = "Create Story"
-                                currentSubtitle = null
-                                customNavigationIcon = null
-                                customActions = null
-                                CreateStoryScreen(
-                                    onCancel = { nav.popBackStack() },
-                                    onCreate = { title, location ->
-                                        val s = Story(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
-                                        stories.add(0, s)
-                                        nav.navigate("detail/${s.id}") { popUpTo("list") { inclusive = false } }
-                                    }
-                                )
-                            }
+
 
                             composable("settings") {
                                 currentTitle = "Settings"
