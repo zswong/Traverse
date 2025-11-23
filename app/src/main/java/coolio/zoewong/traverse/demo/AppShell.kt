@@ -51,11 +51,6 @@ fun AppShell(
                     onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.MyStories.route) { launchSingleTop = true } }
                 )
                 NavigationDrawerItem(
-                    label = { Text(DrawerDest.CreateStory.label) },
-                    selected = currentTitle == "Create Story",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.CreateStory.route) { launchSingleTop = true } }
-                )
-                NavigationDrawerItem(
                     label = { Text(DrawerDest.Map.label) },
                     selected = currentTitle == "Map",
                     onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.Map.route) { launchSingleTop = true } }
