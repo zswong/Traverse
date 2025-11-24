@@ -28,14 +28,14 @@ import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.viewmodel.editDatabase
 import coolio.zoewong.traverse.model.viewmodel.getMemories
 import coolio.zoewong.traverse.model.viewmodel.getStories
 import coolio.zoewong.traverse.model.viewmodel.getStoryById
-import coolio.zoewong.traverse.model.viewmodel.newEffectToAddMemoryToStory
-import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
-import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemoryAndAddToStory
-import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateStory
 import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
+import coolio.zoewong.traverse.model.viewmodel.toAddMemoryToStory
+import coolio.zoewong.traverse.model.viewmodel.toCreateMemory
+import coolio.zoewong.traverse.model.viewmodel.toCreateStory
 import coolio.zoewong.traverse.ui.demo.AppShell
 import coolio.zoewong.traverse.ui.demo.JournalScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
@@ -107,10 +107,14 @@ class TraverseDemoActivity : ComponentActivity() {
                 }
 
                 AppState {
-                    val createMemory = newEffectToCreateMemory()
-                    val createStory = newEffectToCreateStory()
-                    val addMemoryToStory = newEffectToAddMemoryToStory()
-                    val createMemoryAndAddToStory = newEffectToCreateMemoryAndAddToStory()
+                    val createMemory = editDatabase(::toCreateMemory)
+                    val createStory = editDatabase(::toCreateStory)
+                    val addMemoryToStory = editDatabase(::toAddMemoryToStory)
+                    val createMemoryAndAddToStory =
+                        editDatabase { db, memory: Memory, story: Story ->
+                            toCreateMemory(db, memory)
+                            toAddMemoryToStory(db, story, memory)
+                        }
 
                     AppShell(
                         nav = nav,

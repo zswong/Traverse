@@ -7,14 +7,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.model.Memory
-import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.toDatabase
 import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 /**
  * Gets all the memories from the database.
@@ -44,38 +41,6 @@ fun getMemories(): Pair<Boolean, List<Memory>> {
 /**
  * Creates a function that when called, inserts the given memory into the database.
  */
-@Composable
-fun newEffectToCreateMemory(): (memory: Memory) -> Unit {
-    val context = LocalContext.current
-    val dbstate = DatabaseState.current
-    return remember(context, dbstate) {
-        fun(memory: Memory) {
-            CoroutineScope(Dispatchers.IO).launch {
-                dbstate.waitForReady().memories.insert(
-                    memory.toDatabase()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Creates a function that when called, creates a memory and adds it to the given story.
- */
-@Composable
-fun newEffectToCreateMemoryAndAddToStory(): (memory: Memory, story: Story) -> Unit {
-    val context = LocalContext.current
-    val dbstate = DatabaseState.current
-    return remember(context, dbstate) {
-        fun(memory: Memory, story: Story) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val db = dbstate.waitForReady()
-                db.memories.insert(memory.toDatabase())
-                db.stories.addMemory(
-                    story.toDatabase(),
-                    memory.toDatabase(),
-                )
-            }
-        }
-    }
+suspend fun toCreateMemory(db: TraverseRepository, memory: Memory) {
+    db.memories.insert(memory.toDatabase())
 }
