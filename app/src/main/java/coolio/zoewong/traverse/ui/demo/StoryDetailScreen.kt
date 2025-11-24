@@ -45,44 +45,9 @@ fun StoryDetailScreen(
             }
         }
     }
-
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = story.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 2
-                        )
-                        val dateText = SimpleDateFormat(
-                            "EEEE, MMM dd, yyyy",
-                            Locale.getDefault()
-                        ).format(Date(story.dateMillis))
-                        Text(
-                            text = dateText,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAddToStory) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Add segment"
-                        )
-                    }
-                }
-            )
+
         }
     ) { padding ->
         Column(
