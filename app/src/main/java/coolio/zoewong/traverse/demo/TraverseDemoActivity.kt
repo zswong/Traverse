@@ -26,9 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
-import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Memory
-import coolio.zoewong.traverse.model.OldStory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.viewmodel.getMemories
 import coolio.zoewong.traverse.model.viewmodel.getStories
