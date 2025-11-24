@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -28,32 +30,84 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import coolio.zoewong.traverse.model.Story
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
-data class ChatMsg(val id: Long, val text: String?, @DrawableRes val imageRes: Int?)
 
+data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun JournalScreen(
     messages: List<ChatMsg>,
-    onSend: (String?, Uri?) -> Unit
+    stories: List<Story>,
+    onSend: (String?, Uri?) -> Unit,
+    onAddToStory: (ChatMsg, Story) -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
 
+
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val selectionMode = selectedIds.isNotEmpty()
+
+
+    var showStoryPicker by remember { mutableStateOf(false) }
+
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(messages, key = { it.id }) { m ->
+                val interactionSource = remember { MutableInteractionSource() }
+                val isSelected = m.id in selectedIds
+
                 Surface(
                     shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = {
+                                if (selectionMode) {
+
+                                    selectedIds =
+                                        if (isSelected) selectedIds - m.id
+                                        else selectedIds + m.id
+                                } else {
+
+                                }
+                            },
+                            onLongClick = {
+
+                                selectedIds =
+                                    if (isSelected) selectedIds - m.id
+                                    else selectedIds + m.id
+                            }
+                        )
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (!m.text.isNullOrBlank()) Text(m.text!!)
-                        if (m.imageRes != null) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (!m.text.isNullOrBlank()) {
+                            Text(m.text)
+                        }
+                        if (!m.imageUri.isNullOrBlank()) {
                             AsyncImage(
-                                model = m.imageRes,
+                                model = m.imageUri,   // ← 直接用 URI 字符串
                                 contentDescription = "photo",
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -61,16 +115,48 @@ fun JournalScreen(
                                     .clip(MaterialTheme.shapes.extraLarge)
                             )
                         }
+
                     }
                 }
             }
+
             item { Spacer(Modifier.height(8.dp)) }
+        }
+
+
+        if (selectionMode) {
+            Surface(
+                tonalElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "${selectedIds.size} selected",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    TextButton(
+                        enabled = stories.isNotEmpty(),
+                        onClick = { showStoryPicker = true }
+                    ) {
+                        Text("Add to story")
+                    }
+                }
+            }
         }
 
 
         Surface(shadowElevation = 6.dp) {
             Row(
-                Modifier.fillMaxWidth().padding(12.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { showAttach = true }) {
@@ -94,6 +180,7 @@ fun JournalScreen(
         }
     }
 
+
     if (showAttach) {
         AttachmentSheet(
             onDismiss = { showAttach = false },
@@ -103,27 +190,139 @@ fun JournalScreen(
             }
         )
     }
+
+
+    if (showStoryPicker && selectedIds.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = {
+                showStoryPicker = false
+            },
+            title = { Text("Add to a story") },
+            text = {
+                if (stories.isEmpty()) {
+                    Text("You don't have any stories yet.\nCreate a story first.")
+                } else {
+                    Column {
+                        Text(
+                            "Choose a story. The selected journal entries will be attached to it.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(8.dp))
+
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 260.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(stories, key = { it.id }) { story ->
+                                TextButton(
+                                    onClick = {
+
+                                        val selectedMessages = messages.filter { it.id in selectedIds }
+                                        selectedMessages.forEach { msg ->
+                                            onAddToStory(msg, story)
+                                        }
+
+
+                                        showStoryPicker = false
+                                        selectedIds = emptySet()
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = story.title,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        val dateText = SimpleDateFormat(
+                                            "MMM dd, yyyy",
+                                            Locale.getDefault()
+                                        ).format(Date(story.dateMillis))
+                                        Text(
+                                            text = dateText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showStoryPicker = false
+
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
+
 
 @Composable
 private fun AttachmentSheet(
     onDismiss: () -> Unit,
     onPick: (Uri) -> Unit
 ) {
-
-    val candidates = listOf(
-        coolio.zoewong.traverse.R.drawable.coffee,
-        coolio.zoewong.traverse.R.drawable.coffeewithdonuts
-    )
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text("Pick a photo", style = MaterialTheme.typography.titleMedium)
 
             AttachmentSheetItemTakePhoto(onPick = onPick)
+
+
+            AttachmentSheetItemPickFromGallery(onPick = onPick)
+
             Spacer(Modifier.height(16.dp))
         }
     }
 }
+@Composable
+private fun AttachmentSheetItemPickFromGallery(
+    onPick: (Uri) -> Unit
+) {
+    val context = LocalContext.current
+
+    val pickImageResult = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                onPick(uri)
+            }
+        }
+    )
+
+    fun pickFromGallery() {
+        pickImageResult.launch("image/*")
+    }
+
+    Surface(
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                pickFromGallery()
+            }
+    ) {
+        Text("Gallery")
+    }
+}
+
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

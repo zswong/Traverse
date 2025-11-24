@@ -87,4 +87,14 @@ interface TraverseDatabaseAccessObject {
     @Query("SELECT * FROM memories")
     fun watchMemories(): Flow<List<MemoryEntity>>
 
+
+    @Insert
+    suspend fun insertStorySegment(segment: StorySegmentEntity): Long
+
+    @Query(
+        "SELECT * FROM story_segments " +
+                "WHERE story_id = :storyId " +
+                "ORDER BY created_at DESC"
+    )
+    fun watchStorySegmentsForStory(storyId: Long): Flow<List<StorySegmentEntity>>
 }

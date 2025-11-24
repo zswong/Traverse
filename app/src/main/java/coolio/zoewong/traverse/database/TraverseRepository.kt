@@ -126,6 +126,25 @@ class TraverseRepository(
         return database.access.watchNewestMemoryTimestamp()
             .flowOn(IO)
     }
+    // -------- Story segments --------
+
+    /**
+     * Inserts a StorySegmentEntity into the database, returning a copy with its new ID.
+     */
+    suspend fun insertStorySegment(segment: StorySegmentEntity): StorySegmentEntity {
+        return withContext(IO) {
+            val id = access.insertStorySegment(segment)
+            segment.copy(id = id)
+        }
+    }
+
+    /**
+     * Watches all segments for a given story.
+     */
+    suspend fun watchStorySegments(storyId: Long): Flow<List<StorySegmentEntity>> {
+        return access.watchStorySegmentsForStory(storyId)
+            .flowOn(IO)
+    }
 
     companion object {
 

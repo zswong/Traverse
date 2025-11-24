@@ -11,9 +11,10 @@ import androidx.room.RoomDatabase
  * When accessing the data, use TraverseRepository instead.
  */
 @Database(
-    version = 1,
+    version = 2,
     entities = [
-        MemoryEntity::class
+        MemoryEntity::class,
+        StorySegmentEntity::class
     ]
 )
 abstract class TraverseDatabase : RoomDatabase() {
@@ -48,6 +49,7 @@ abstract class TraverseDatabase : RoomDatabase() {
                 TraverseDatabase::class.java,
                 "traverse_database"
             )
+                .fallbackToDestructiveMigration(false)
                 .build()
         }
     }

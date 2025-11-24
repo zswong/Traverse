@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.MemoryEntity
 import coolio.zoewong.traverse.database.MemoryType
+import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Segment
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.ui.demo.AppShell
@@ -115,46 +116,51 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
+
                                 val context = LocalContext.current
                                 var msgs by remember { mutableStateOf(listOf<ChatMsg>()) }
                                 val dbstate = DatabaseState.current
+
+
                                 dbstate.whenReady { db ->
                                     LaunchedEffect(db) {
                                         db.watchMemories().collect { entities ->
-                                            msgs = entities.map {
-                                                ChatMsg(it.id, it.contents, null)
-                                                // TODO: Use a URL instead of resource
+                                            msgs = entities.map { mem ->
+                                                when (mem.type) {
+                                                    MemoryType.TEXT -> ChatMsg(
+                                                        id = mem.id,
+                                                        text = mem.contents,
+                                                        imageUri = null
+                                                    )
+                                                    MemoryType.IMAGE -> ChatMsg(
+                                                        id = mem.id,
+                                                        text = null,
+                                                        imageUri = mem.contents
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
 
+
                                 if (dbstate.status != LoadStatus.LOADED) {
-                                    // Simple example of showing a loading placeholder.
-                                    Surface {
-                                        Text("Loading...")
-                                    }
+                                    Surface { Text("Loading...") }
                                     return@composable
                                 }
 
                                 JournalScreen(
                                     messages = msgs,
+                                    stories = stories,
                                     onSend = { text, uri ->
-                                        // TODO: Image URL instead of resource
 
-                                        // CoroutineScope is only safe when not used directly inside
-                                        // a @Composable function, as it will repeatedly call it
-                                        // every time the composable is recomposed.
-                                        //
-                                        // It is safe here because onSend is only run once in
-                                        // response to use interaction.
                                         CoroutineScope(Dispatchers.IO).launch {
                                             val memory = when {
                                                 text != null -> MemoryEntity(
-                                                        type = MemoryType.TEXT,
-                                                        timestamp = Calendar.getInstance().time.time,
-                                                        contents = text,
-                                                    )
+                                                    type = MemoryType.TEXT,
+                                                    timestamp = Calendar.getInstance().time.time,
+                                                    contents = text,
+                                                )
                                                 uri != null -> {
                                                     val savedUri = dbstate.database.media.saveImage(context, uri)
                                                     MemoryEntity(
@@ -166,13 +172,41 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 else -> throw IllegalArgumentException("No message or image?")
                                             }
 
-                                            dbstate.waitForReady().apply {
-                                                insertMemory(memory)
+                                            dbstate.waitForReady().insertMemory(memory)
+                                        }
+                                    },
+                                    onAddToStory = { msg, story ->
+
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            val repo = dbstate.waitForReady()
+
+
+                                            val memory = repo.getMemory(msg.id) ?: return@launch
+
+
+                                            val (text, imageUri) = when (memory.type) {
+                                                MemoryType.TEXT -> memory.contents to null
+                                                MemoryType.IMAGE -> null to memory.contents
                                             }
+
+
+                                            repo.insertStorySegment(
+                                                StorySegmentEntity(
+                                                    storyId = story.id,
+                                                    memoryId = memory.id,
+                                                    text = text,
+                                                    imageUri = imageUri,
+                                                    createdAt = memory.timestamp,
+                                                )
+                                            )
+
+
+                                            story.segments.add(0, Segment(idGen.getAndIncrement(), memory.timestamp, text ?: "", imageUri))
                                         }
                                     }
                                 )
                             }
+
 
                             composable("list") {
                                 currentTitle = "My Stories"
