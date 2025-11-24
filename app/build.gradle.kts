@@ -60,6 +60,8 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.documentfile)
     implementation(libs.play.services.maps)
+    implementation(libs.maps.compose)
+    implementation(libs.maps.compose.utils)
     //implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)
@@ -79,6 +81,9 @@ dependencies {
 
     // Accompanist
     implementation(libs.accompanist.permissions)
+    
+    // ExifInterface for reading image metadata
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Tried Switching to ML Kit for guaranteed on-device processing but doesn't work
     //implementation("com.google.android.gms:play-services-mlkit-speech:17.0.1")

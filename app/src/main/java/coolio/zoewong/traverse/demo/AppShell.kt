@@ -34,9 +34,12 @@ fun AppShell(
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val currentRoute = nav.currentBackStackEntry?.destination?.route
+    val isMapScreen = currentRoute?.startsWith("map") == true
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = !isMapScreen,
         drawerContent = {
             ModalDrawerSheet {
                 Text("Traverse", style = MaterialTheme.typography.titleLarge, modifier = androidx.compose.ui.Modifier.padding(16.dp))
@@ -49,11 +52,6 @@ fun AppShell(
                     label = { Text(DrawerDest.MyStories.label) },
                     selected = currentTitle == "My Stories",
                     onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.MyStories.route) { launchSingleTop = true } }
-                )
-                NavigationDrawerItem(
-                    label = { Text(DrawerDest.Map.label) },
-                    selected = currentTitle == "Map",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.Map.route) { launchSingleTop = true } }
                 )
                 NavigationDrawerItem(
                     label = { Text(DrawerDest.Settings.label) },

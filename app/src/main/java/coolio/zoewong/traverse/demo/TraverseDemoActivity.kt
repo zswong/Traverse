@@ -9,16 +9,22 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -37,6 +43,7 @@ import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
 import coolio.zoewong.traverse.model.viewmodel.toAddMemoryToStory
 import coolio.zoewong.traverse.model.viewmodel.toCreateMemory
 import coolio.zoewong.traverse.model.viewmodel.toCreateStory
+import coolio.zoewong.traverse.model.viewmodel.toDeleteStory
 import coolio.zoewong.traverse.ui.demo.AppShell
 import coolio.zoewong.traverse.ui.demo.JournalScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
@@ -44,7 +51,7 @@ import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
 import coolio.zoewong.traverse.ui.demo.StoryListScreen
 import coolio.zoewong.traverse.ui.demo.CreateStoryScreen
 import coolio.zoewong.traverse.ui.demo.SettingsScreen
-import coolio.zoewong.traverse.ui.demo.MapScreen
+import coolio.zoewong.traverse.ui.demo.StoryDetailMapScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.theme.ThemeManager
@@ -53,6 +60,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -108,20 +116,33 @@ class TraverseDemoActivity : ComponentActivity() {
                 }
 
                 AppState {
-                    val createMemory = editDatabase(::toCreateMemory)
-                    val createStory = editDatabase(::toCreateStory)
+                    val context = LocalContext.current
+                    val scope = rememberCoroutineScope()
+                    val dbstate = DatabaseState.current
+                    val createMemory = editDatabase { db, memory: Memory ->
+                        toCreateMemory(db, memory, context)
+                    }
+                    val createStory: (Story) -> Unit = remember(dbstate, context, nav) { { story ->
+                        scope.launch {
+                            val db = dbstate.waitForReady()
+                            val storyId = toCreateStory(db, story, context)
+                            nav.navigate("detail/$storyId") {
+                                popUpTo("list") { inclusive = false }
+                            }
+                        }
+                    } }
                     val addMemoryToStory =
                         editDatabase { db, memory: Memory, story: Story ->
                             try {
-                                toAddMemoryToStory(db, story, memory)
+                                toAddMemoryToStory(db, story, memory, context)
                             } catch (e: SQLiteConstraintException) {
                                 Log.i("addMemoryToStory", "Memory ${memory.id} already in story ${story.id}")
                             }
                         }
                     val createMemoryAndAddToStory =
                         editDatabase { db, memory: Memory, story: Story ->
-                            toCreateMemory(db, memory)
-                            toAddMemoryToStory(db, story, memory)
+                            toCreateMemory(db, memory, context)
+                            toAddMemoryToStory(db, story, memory, context)
                         }
 
                     AppShell(
@@ -189,12 +210,30 @@ class TraverseDemoActivity : ComponentActivity() {
                                     onCreate = { nav.navigate("create") }
                                 )
                             }
-                            composable("map") {
+                            composable(
+                                route = "map/{storyId}",
+                                arguments = listOf(navArgument("storyId") { type = NavType.LongType })
+                            ) { backStack ->
+                                val storyId = backStack.arguments!!.getLong("storyId")
                                 currentTitle = "Map"
                                 currentSubtitle = null
-                                customNavigationIcon = null
+                                customNavigationIcon = {
+                                    IconButton(onClick = { nav.popBackStack() }) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back"
+                                        )
+                                    }
+                                }
                                 customActions = null
-                                MapScreen()
+                                StoryDetailMapScreen(
+                                    storyId = storyId,
+                                    onStoryClick = { clickedStoryId ->
+                                        nav.navigate("detail/$clickedStoryId") {
+                                            popUpTo("map/$storyId") { inclusive = false }
+                                        }
+                                    }
+                                )
                             }
 
                             composable("create") {
@@ -206,15 +245,12 @@ class TraverseDemoActivity : ComponentActivity() {
                                     onCancel = { nav.popBackStack() },
                                     onCreate = { title, location ->
                                         val newStory = Story(
-                                            id = idGen.getAndIncrement(),
+                                            id = AUTOMATICALLY_GENERATED_ID,
                                             title = title,
                                             dateMillis = System.currentTimeMillis(),
                                             location = location
                                         )
                                         createStory(newStory)
-                                        nav.navigate("detail/${newStory.id}") {
-                                            popUpTo("list") { inclusive = false }
-                                        }
                                     }
                                 )
                             }
@@ -260,19 +296,77 @@ class TraverseDemoActivity : ComponentActivity() {
                                         )
                                     }
                                 }
+                                var showMenu by remember { mutableStateOf(false) }
+                                var showDeleteDialog by remember { mutableStateOf(false) }
+                                
+                                val deleteStory = editDatabase { db, storyToDelete: Story ->
+                                    toDeleteStory(db, storyToDelete)
+                                }
+                                
                                 customActions = {
-                                    IconButton(onClick = { /* TODO: Location action */ }) {
+                                    IconButton(
+                                        onClick = {
+                                            // Navigate to map with this story highlighted
+                                            nav.navigate("map/$id")
+                                        }
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Filled.LocationOn,
                                             contentDescription = "Location"
                                         )
                                     }
-                                    IconButton(onClick = { /* TODO: Menu action */ }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.MoreVert,
-                                            contentDescription = "More options"
-                                        )
+                                    Box {
+                                        IconButton(onClick = { showMenu = true }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.MoreVert,
+                                                contentDescription = "More options"
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Delete Story") },
+                                                onClick = {
+                                                    showMenu = false
+                                                    showDeleteDialog = true
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Delete,
+                                                        contentDescription = null
+                                                    )
+                                                }
+                                            )
+                                        }
                                     }
+                                }
+                                
+                                if (showDeleteDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showDeleteDialog = false },
+                                        title = { Text("Delete Story") },
+                                        text = { Text("Are you sure you want to delete \"${story.title}\"? This action cannot be undone.") },
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    showDeleteDialog = false
+                                                    deleteStory(story)
+                                                    nav.popBackStack()
+                                                }
+                                            ) {
+                                                Text("Delete")
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = { showDeleteDialog = false }
+                                            ) {
+                                                Text("Cancel")
+                                            }
+                                        }
+                                    )
                                 }
 
                                 StoryDetailScreen(

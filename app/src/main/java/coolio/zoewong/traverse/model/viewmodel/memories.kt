@@ -1,5 +1,8 @@
 package coolio.zoewong.traverse.model.viewmodel
 
+import android.content.Context
+import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,6 +15,8 @@ import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.toDatabase
 import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Gets all the memories from the database.
@@ -38,9 +43,25 @@ fun getMemories(): Pair<Boolean, List<Memory>> {
     return loaded to memories
 }
 
-/**
- * Creates a function that when called, inserts the given memory into the database.
- */
-suspend fun toCreateMemory(db: TraverseRepository, memory: Memory) {
-    db.memories.insert(memory.toDatabase())
+suspend fun toCreateMemory(db: TraverseRepository, memory: Memory, context: Context) {
+    val memoryToSave = if (memory.type == Memory.Type.IMAGE && memory.imageUri != null) {
+        withContext(Dispatchers.IO) {
+            val sourceUri = Uri.parse(memory.imageUri)
+            
+            val savedImageUri = try {
+                db.media.saveImage(context, sourceUri)
+            } catch (e: Exception) {
+                Log.e("MemoryLocation", "Failed to save image", e)
+                sourceUri
+            }
+            
+            memory.copy(
+                imageUri = savedImageUri.toString()
+            )
+        }
+    } else {
+        memory
+    }
+    
+    db.memories.insert(memoryToSave.toDatabase())
 }
