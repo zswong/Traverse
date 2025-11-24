@@ -40,61 +40,6 @@ class TraverseRepository(
      */
     val media = mediaStore
 
-    @Deprecated("Use memories.get instead.")
-    suspend fun getMemory(id: Long): MemoryEntity? {
-        return memories.get(id)
-    }
-
-    @Deprecated("Use memories.getBetween instead.")
-    suspend fun getMemoriesBetween(from: Long, to: Long): List<MemoryEntity> {
-        return memories.getBetween(from, to)
-    }
-
-    @Deprecated("Use memories.getPrevious instead.")
-    suspend fun getPreviousMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
-        return memories.getPrevious(relativeTo, count)
-    }
-
-    @Deprecated("Use memories.getNext instead.")
-    suspend fun getNextMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
-        return memories.getNext(relativeTo, count)
-    }
-
-    @Deprecated("Use memories.insert instead.")
-    suspend fun insertMemory(memory: MemoryEntity): MemoryEntity {
-        return memories.insert(memory)
-    }
-
-    @Deprecated("Use memories.delete instead.")
-    suspend fun deleteMemory(id: Long) {
-        memories.delete(id)
-    }
-
-    @Deprecated("Use memories.delete instead.")
-    suspend fun deleteMemory(memory: MemoryEntity) {
-        memories.delete(memory)
-    }
-
-    @Deprecated("Use memories.watchsince instead.")
-    suspend fun watchMemoriesSince(timestamp: Long): Flow<List<MemoryEntity>> {
-        return memories.watchSince(timestamp)
-    }
-
-    @Deprecated("Use memories.watchAll instead.")
-    suspend fun watchMemories(): Flow<List<MemoryEntity>> {
-        return memories.watchAll()
-    }
-
-    @Deprecated("Use memories.watchOldestTimestamp instead.")
-    suspend fun watchOldestMemoryTimestamp(): Flow<Long> {
-        return memories.watchOldestTimestamp()
-    }
-
-    @Deprecated("Use memories.watchNewestTimestamp instead.")
-    suspend fun watchNewestMemoryTimestamp(): Flow<Long> {
-        return memories.watchNewestTimestamp()
-    }
-
     /**
      * Provides access to memories.
      */
