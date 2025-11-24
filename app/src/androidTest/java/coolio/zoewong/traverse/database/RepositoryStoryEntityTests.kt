@@ -120,7 +120,7 @@ class RepositoryStoryEntityTests {
             assertEquals("sanity check", 0, db.assocStoriesMemories.count())
 
             // Insert memories and stories.
-            val insertedMemories = memories.map { repo.insertMemory(it) }
+            val insertedMemories = memories.map { repo.memories.insert(it) }
             val insertedStories = stories.map { repo.stories.insert(it) }
 
             // Associate memories with stories.
@@ -179,7 +179,7 @@ class RepositoryStoryEntityTests {
             assertEquals("sanity check", 0, db.assocStoriesMemories.count())
 
             // Insert memories and stories.
-            val insertedMemories = memories.map { repo.insertMemory(it) }
+            val insertedMemories = memories.map { repo.memories.insert(it) }
             val insertedStories = stories.map { repo.stories.insert(it) }
 
             // Associate memories with stories.
@@ -206,7 +206,7 @@ class RepositoryStoryEntityTests {
 
     /**
      * Tests:
-     *  - deleteMemory(MemoryEntity)
+     *  - memories.delete(MemoryEntity)
      */
     @Test
     fun removingMemoriesFromStoriesAsMemoryDeleteCascade() = runTest {
@@ -223,7 +223,7 @@ class RepositoryStoryEntityTests {
             assertEquals("sanity check", 0, db.assocStoriesMemories.count())
 
             // Insert memories and stories.
-            val insertedMemories = memories.map { repo.insertMemory(it) }
+            val insertedMemories = memories.map { repo.memories.insert(it) }
             val insertedStories = stories.map { repo.stories.insert(it) }
 
             // Associate memories with stories.
@@ -234,7 +234,7 @@ class RepositoryStoryEntityTests {
             }
 
             // Delete Memory 1 and check that Story 1 no longer contains it.
-            repo.deleteMemory(insertedMemories[0])
+            repo.memories.delete(insertedMemories[0])
             assertEquals(
                 listOf(
                     insertedMemories[1],
@@ -265,7 +265,7 @@ class RepositoryStoryEntityTests {
             assertEquals("sanity check", 0, db.assocStoriesMemories.count())
 
             // Insert memories and stories.
-            val insertedMemories = memories.map { repo.insertMemory(it) }
+            val insertedMemories = memories.map { repo.memories.insert(it) }
             val insertedStories = stories.map { repo.stories.insert(it) }
 
             // Associate memories with stories.
