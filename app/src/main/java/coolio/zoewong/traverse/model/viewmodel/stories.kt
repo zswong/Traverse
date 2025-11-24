@@ -1,6 +1,5 @@
 package coolio.zoewong.traverse.model.viewmodel
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,15 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import coolio.zoewong.traverse.database.StoryEntity
+import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.toDatabase
 import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 /**
  * Gets all the stories from the database.
@@ -102,59 +98,28 @@ fun storyWithMemories(story: Story): Pair<Boolean, Story> {
 }
 
 /**
- * Creates a function that when called, inserts the given story into the database.
+ * Inserts the given story into the database.
  */
-@Composable
-fun newEffectToCreateStory(): (story: Story) -> Unit {
-    val context = LocalContext.current
-    val dbstate = DatabaseState.current
-    return remember(context, dbstate) {
-        fun(story: Story) {
-            CoroutineScope(Dispatchers.IO).launch {
-                dbstate.waitForReady().stories.insert(
-                    story.toDatabase()
-                )
-            }
-        }
-    }
+suspend fun toCreateStory(db: TraverseRepository, story: Story) {
+    db.stories.insert(story.toDatabase())
 }
 
 /**
- * Creates a function that when called, adds the given memory to the given story and
- * updates the database.
+ * Adds the given memory to the given story.
  */
-@Composable
-fun newEffectToAddMemoryToStory(): (story: Story, memory: Memory) -> Unit {
-    val context = LocalContext.current
-    val dbstate = DatabaseState.current
-    return remember(context, dbstate) {
-        fun(story: Story, memory: Memory) {
-            CoroutineScope(Dispatchers.IO).launch {
-                dbstate.waitForReady().stories.addMemory(
-                    story.toDatabase(),
-                    memory.toDatabase(),
-                )
-            }
-        }
-    }
+suspend fun toAddMemoryToStory(db: TraverseRepository, story: Story, memory: Memory) {
+    db.stories.addMemory(
+        story.toDatabase(),
+        memory.toDatabase(),
+    )
 }
 
 /**
- * Creates a function that when called, removes the given memory from the given story and
- * updates the database.
+ * Removes the given memory from the given story.
  */
-@Composable
-fun newEffectToRemoveMemoryToStory(): (story: Story, memory: Memory) -> Unit {
-    val context = LocalContext.current
-    val dbstate = DatabaseState.current
-    return remember(context, dbstate) {
-        fun(story: Story, memory: Memory) {
-            CoroutineScope(Dispatchers.IO).launch {
-                dbstate.waitForReady().stories.removeMemory(
-                    story.toDatabase(),
-                    memory.toDatabase(),
-                )
-            }
-        }
-    }
+suspend fun toRemoveMemoryFromStory(db: TraverseRepository, story: Story, memory: Memory) {
+    db.stories.removeMemory(
+        story.toDatabase(),
+        memory.toDatabase(),
+    )
 }
