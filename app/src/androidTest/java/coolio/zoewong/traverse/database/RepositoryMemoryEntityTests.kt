@@ -24,14 +24,14 @@ class RepositoryMemoryEntityTests {
     var tempdir: TemporaryFolder = TemporaryFolder()
 
     /**
-     * Tests: insertMemory(MemoryEntity)
+     * Tests: memories.insert(MemoryEntity)
      */
     @Test
     fun insertingMemories() = runTest {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            repo.insertMemory(
+            repo.memories.insert(
                 MemoryEntity(
                     type = MemoryType.TEXT,
                     timestamp = now,
@@ -40,7 +40,7 @@ class RepositoryMemoryEntityTests {
             )
             assertEquals(1, db.memories.count())
 
-            repo.insertMemory(
+            repo.memories.insert(
                 MemoryEntity(
                     type = MemoryType.TEXT,
                     timestamp = now + 1000,
@@ -52,14 +52,14 @@ class RepositoryMemoryEntityTests {
     }
 
     /**
-     * Tests: deleteMemory(Long)
+     * Tests: memories.delete(Long)
      */
     @Test
     fun deletingMemoriesByID() = runTest {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            val memory = repo.insertMemory(
+            val memory = repo.memories.insert(
                 MemoryEntity(
                     type = MemoryType.TEXT,
                     timestamp = now,
@@ -67,20 +67,20 @@ class RepositoryMemoryEntityTests {
                 )
             )
 
-            repo.deleteMemory(memory.id)
+            repo.memories.delete(memory.id)
             assertEquals(0, db.memories.count())
         }
     }
 
     /**
-     * Tests: deleteMemory(MemoryEntity)
+     * Tests: memories.delete(MemoryEntity)
      */
     @Test
     fun deletingMemoriesByObject() = runTest {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            val memory = repo.insertMemory(
+            val memory = repo.memories.insert(
                 MemoryEntity(
                     type = MemoryType.TEXT,
                     timestamp = now,
@@ -88,13 +88,13 @@ class RepositoryMemoryEntityTests {
                 )
             )
 
-            repo.deleteMemory(memory)
+            repo.memories.delete(memory)
             assertEquals(0, db.memories.count())
         }
     }
 
     /**
-     * Tests: getMemoriesBetween(Long, Long)
+     * Tests: memories.getBetween(Long, Long)
      */
     @Test
     fun gettingMemoriesBetween() = runTest {
@@ -109,15 +109,15 @@ class RepositoryMemoryEntityTests {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            memories.forEach { repo.insertMemory(it) }
-            val actual = repo.getMemoriesBetween(now + 2000, now + 4000)
+            memories.forEach { repo.memories.insert(it) }
+            val actual = repo.memories.getBetween(now + 2000, now + 4000)
             val expected = memories.slice(1..3)
             assertEquals(expected.messages(), actual.messages())
         }
     }
 
     /**
-     * Tests: getPreviousMemories(MemoryEntity, Long)
+     * Tests: memories.getPrevious(MemoryEntity, Long)
      */
     @Test
     fun gettingPreviousMemories() = runTest {
@@ -132,17 +132,17 @@ class RepositoryMemoryEntityTests {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            memories.forEach { repo.insertMemory(it) }
-            val relativeTo = repo.getMemory(3)!! // <-- not an index; starts at 1
+            memories.forEach { repo.memories.insert(it) }
+            val relativeTo = repo.memories.get(3)!! // <-- not an index; starts at 1
 
-            val actual = repo.getPreviousMemories(relativeTo, 1)
+            val actual = repo.memories.getPrevious(relativeTo, 1)
             val expected = memories.slice(1..1)
             assertEquals(expected.messages(), actual.messages())
         }
     }
 
     /**
-     * Tests: getNextMemories(MemoryEntity, Long)
+     * Tests: memories.getNext(MemoryEntity, Long)
      */
     @Test
     fun gettingNextMemories() = runTest {
@@ -157,10 +157,10 @@ class RepositoryMemoryEntityTests {
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.memories.count())
 
-            memories.forEach { repo.insertMemory(it) }
-            val relativeTo = repo.getMemory(3)!! // <-- not an index; starts at 1
+            memories.forEach { repo.memories.insert(it) }
+            val relativeTo = repo.memories.get(3)!! // <-- not an index; starts at 1
 
-            val actual = repo.getNextMemories(relativeTo, 1)
+            val actual = repo.memories.getNext(relativeTo, 1)
             val expected = memories.slice(3..3)
             assertEquals(expected.messages(), actual.messages())
         }
