@@ -125,7 +125,7 @@ class TraverseDemoActivity : ComponentActivity() {
 
                                 dbstate.whenReady { db ->
                                     LaunchedEffect(db) {
-                                        db.watchMemories().collect { entities ->
+                                        db.memories.watchAll().collect { entities ->
                                             msgs = entities.map { mem ->
                                                 when (mem.type) {
                                                     MemoryType.TEXT -> ChatMsg(
@@ -146,7 +146,6 @@ class TraverseDemoActivity : ComponentActivity() {
                                     }
                                 }
 
-
                                 if (dbstate.status != LoadStatus.LOADED) {
                                     Surface { Text("Loading...") }
                                     return@composable
@@ -157,6 +156,12 @@ class TraverseDemoActivity : ComponentActivity() {
                                     stories = stories,
                                     onSend = { text, uri ->
 
+                                        // CoroutineScope is only safe when not used directly inside
+                                        // a @Composable function, as it will repeatedly call it
+                                        // every time the composable is recomposed.
+                                        //
+                                        // It is safe here because onSend is only run once in
+                                        // response to use interaction.
                                         CoroutineScope(Dispatchers.IO).launch {
                                             val memory = when {
                                                 text != null -> MemoryEntity(
@@ -175,7 +180,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 else -> throw IllegalArgumentException("No message or image?")
                                             }
 
-                                            dbstate.waitForReady().insertMemory(memory)
+                                            dbstate.waitForReady().memories.insert(memory)
                                         }
                                     },
                                     onAddToStory = { msg, story ->
@@ -184,7 +189,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                             val repo = dbstate.waitForReady()
 
 
-                                            val memory = repo.getMemory(msg.id) ?: return@launch
+                                            val memory = repo.memories.get(msg.id) ?: return@launch
 
 
                                             val (text, imageUri) = when (memory.type) {
