@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.documentfile)
+    implementation(libs.play.services.maps)
     //implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)
