@@ -8,7 +8,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
@@ -16,25 +15,25 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
 import coolio.zoewong.traverse.database.MemoryEntity
 import coolio.zoewong.traverse.database.MemoryType
 import coolio.zoewong.traverse.database.StorySegmentEntity
+import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Segment
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.viewmodel.getMemories
+import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
 import coolio.zoewong.traverse.ui.demo.AppShell
-import coolio.zoewong.traverse.ui.demo.ChatMsg
 import coolio.zoewong.traverse.ui.demo.JournalScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreen
@@ -44,7 +43,6 @@ import coolio.zoewong.traverse.ui.demo.SettingsScreen
 import coolio.zoewong.traverse.ui.demo.MapScreen
 import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.DatabaseState
-import coolio.zoewong.traverse.ui.state.LoadStatus
 import coolio.zoewong.traverse.ui.theme.ThemeManager
 import coolio.zoewong.traverse.ui.theme.TraverseTheme
 import kotlinx.coroutines.CoroutineScope
@@ -118,70 +116,34 @@ class TraverseDemoActivity : ComponentActivity() {
                                 customNavigationIcon = null
                                 customActions = null
 
+                                val createMemory = newEffectToCreateMemory()
+
                                 val context = LocalContext.current
-                                var msgs by remember { mutableStateOf(listOf<ChatMsg>()) }
                                 val dbstate = DatabaseState.current
+                                val (loaded, memories) = getMemories()
 
-
-                                dbstate.whenReady { db ->
-                                    LaunchedEffect(db) {
-                                        db.memories.watchAll().collect { entities ->
-                                            msgs = entities.map { mem ->
-                                                when (mem.type) {
-                                                    MemoryType.TEXT -> ChatMsg(
-                                                        id = mem.id,
-                                                        text = mem.contents,
-                                                        imageUri = null,
-                                                        timestamp = mem.timestamp
-                                                    )
-                                                    MemoryType.IMAGE -> ChatMsg(
-                                                        id = mem.id,
-                                                        text = null,
-                                                        imageUri = mem.contents,
-                                                        timestamp = mem.timestamp
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (dbstate.status != LoadStatus.LOADED) {
+                                if (!loaded) {
                                     Surface { Text("Loading...") }
                                     return@composable
                                 }
 
                                 JournalScreen(
-                                    messages = msgs,
+                                    memories = memories,
                                     stories = stories,
                                     onSend = { text, uri ->
-
-                                        // CoroutineScope is only safe when not used directly inside
-                                        // a @Composable function, as it will repeatedly call it
-                                        // every time the composable is recomposed.
-                                        //
-                                        // It is safe here because onSend is only run once in
-                                        // response to use interaction.
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            val memory = when {
-                                                text != null -> MemoryEntity(
-                                                    type = MemoryType.TEXT,
-                                                    timestamp = Calendar.getInstance().time.time,
-                                                    contents = text,
-                                                )
-                                                uri != null -> {
-                                                    val savedUri = dbstate.database.media.saveImage(context, uri)
-                                                    MemoryEntity(
-                                                        type = MemoryType.IMAGE,
-                                                        timestamp = Calendar.getInstance().time.time,
-                                                        contents = savedUri.toString(),
-                                                    )
-                                                }
-                                                else -> throw IllegalArgumentException("No message or image?")
-                                            }
-
-                                            dbstate.waitForReady().memories.insert(memory)
-                                        }
+                                        createMemory(
+                                            Memory(
+                                                id = AUTOMATICALLY_GENERATED_ID,
+                                                timestampMillis = Calendar.getInstance().time.time,
+                                                text = text ?: "",
+                                                imageUri = uri?.toString(),
+                                                type = when {
+                                                    text != null -> Memory.Type.TEXT
+                                                    uri != null -> Memory.Type.IMAGE
+                                                    else -> throw IllegalArgumentException("No message or image?")
+                                                },
+                                            )
+                                        )
                                     },
                                     onAddToStory = { msg, story ->
 

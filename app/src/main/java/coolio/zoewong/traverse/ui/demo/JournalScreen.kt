@@ -41,16 +41,18 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
+import coolio.zoewong.traverse.model.Memory
+
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun JournalScreen(
-    messages: List<ChatMsg>,
+    memories: List<Memory>,
     stories: List<Story>,
     onSend: (String?, Uri?) -> Unit,
-    onAddToStory: (ChatMsg, Story) -> Unit
+    onAddToStory: (Memory, Story) -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
@@ -192,7 +194,7 @@ fun JournalScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(messages, key = { it.id }) { m ->
+            items(memories, key = { it.id }) { m ->
                 val interactionSource = remember { MutableInteractionSource() }
                 val isSelected = m.id in selectedIds
 
@@ -364,7 +366,7 @@ fun JournalScreen(
                                 TextButton(
                                     onClick = {
 
-                                        val selectedMessages = messages.filter { it.id in selectedIds }
+                                        val selectedMessages = memories.filter { it.id in selectedIds }
                                         selectedMessages.forEach { msg ->
                                             onAddToStory(msg, story)
                                         }
