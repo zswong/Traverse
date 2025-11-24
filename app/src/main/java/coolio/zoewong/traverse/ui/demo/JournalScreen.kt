@@ -42,6 +42,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 import coolio.zoewong.traverse.model.Memory
+import coolio.zoewong.traverse.model.Story
 
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
@@ -50,9 +51,9 @@ data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null
 @Composable
 fun JournalScreen(
     memories: List<Memory>,
-    stories: List<OldStory>,
+    stories: List<Story>,
     onSend: (String?, Uri?) -> Unit,
-    onAddToStory: (Memory, OldStory) -> Unit
+    onAddToStory: (Memory, Story) -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
@@ -231,11 +232,11 @@ fun JournalScreen(
                         Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val timeText = remember(m.timestamp) {
+                        val timeText = remember(m.timestampMillis) {
                             SimpleDateFormat(
                                 "MMM dd, yyyy • HH:mm",
                                 Locale.getDefault()
-                            ).format(Date(m.timestamp))
+                            ).format(Date(m.timestampMillis))
                         }
                         Text(
                             text = timeText,

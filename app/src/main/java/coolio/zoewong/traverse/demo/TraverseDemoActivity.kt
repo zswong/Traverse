@@ -5,6 +5,7 @@ package coolio.zoewong.traverse.demo
 import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.RowScope
@@ -28,8 +29,14 @@ import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
 import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.OldStory
+import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.viewmodel.getMemories
+import coolio.zoewong.traverse.model.viewmodel.getStories
+import coolio.zoewong.traverse.model.viewmodel.getStoryById
+import coolio.zoewong.traverse.model.viewmodel.newEffectToAddMemoryToStory
 import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
+import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateStory
+import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
 import coolio.zoewong.traverse.ui.demo.AppShell
 import coolio.zoewong.traverse.ui.demo.JournalScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
@@ -53,35 +60,35 @@ import java.util.concurrent.atomic.AtomicLong
 class TraverseDemoActivity : ComponentActivity() {
 
     val idGen = AtomicLong(1)
-    private val stories = mutableListOf<OldStory>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
 
-        if (stories.isEmpty()) {
-            fun seed(title: String, location: String?): OldStory {
-                val s = OldStory(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
-                s.memories += Memory(
-                    idGen.getAndDecrement(),
-                    timestampMillis = System.currentTimeMillis(),
-                    type = Memory.Type.TEXT,
-                    text = "Walked from Pacific Center... French Toast!!!"
-                )
-                s.memories += Memory(
-                    idGen.getAndIncrement(),
-                    timestampMillis = System.currentTimeMillis(),
-                    type = Memory.Type.TEXT,
-                    text = "Later... doughnuts. Delicious!"
-                )
-                return s
-            }
-            stories += seed("Sad Day! Mish Mish Gone", null)
-            stories += seed("Passed Driving Test!", null)
-            stories += seed("Stanley Park Vancouver", "Vancouver")
-            stories += seed("Stanley Park Vancouver", "Vancouver")
-            stories += seed("Stanley Park Vancouver", "Vancouver")
-        }
+//        if (stories.isEmpty()) {
+//            fun seed(title: String, location: String?): Story {
+//                val s = Story(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
+//                // Relational database can't have rows from tables nested inside other tables' rows.
+////                s.memories += Memory(
+////                    idGen.getAndDecrement(),
+////                    timestampMillis = System.currentTimeMillis(),
+////                    type = Memory.Type.TEXT,
+////                    text = "Walked from Pacific Center... French Toast!!!"
+////                )
+////                s.memories += Memory(
+////                    idGen.getAndIncrement(),
+////                    timestampMillis = System.currentTimeMillis(),
+////                    type = Memory.Type.TEXT,
+////                    text = "Later... doughnuts. Delicious!"
+////                )
+//                return s
+//            }
+//            stories += seed("Sad Day! Mish Mish Gone", null)
+//            stories += seed("Passed Driving Test!", null)
+//            stories += seed("Stanley Park Vancouver", "Vancouver")
+//            stories += seed("Stanley Park Vancouver", "Vancouver")
+//            stories += seed("Stanley Park Vancouver", "Vancouver")
+//        }
 
         setContent {
             TraverseTheme{
@@ -100,6 +107,10 @@ class TraverseDemoActivity : ComponentActivity() {
                 }
 
                 AppState {
+                    val createMemory = newEffectToCreateMemory()
+                    val createStory = newEffectToCreateStory()
+                    val addMemoryToStory = newEffectToAddMemoryToStory()
+
                     AppShell(
                         nav = nav,
                         currentTitle = currentTitle,
@@ -115,13 +126,10 @@ class TraverseDemoActivity : ComponentActivity() {
                                 customNavigationIcon = null
                                 customActions = null
 
-                                val createMemory = newEffectToCreateMemory()
-
-                                val context = LocalContext.current
-                                val dbstate = DatabaseState.current
                                 val (loaded, memories) = getMemories()
+                                val (loaded2, stories) = getStories()
 
-                                if (!loaded) {
+                                if (!loaded || !loaded2) {
                                     Surface { Text("Loading...") }
                                     return@composable
                                 }
@@ -145,24 +153,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                         )
                                     },
                                     onAddToStory = { memory, story ->
-
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            val repo = dbstate.waitForReady()
-
-
-                                            repo.insertStorySegment(
-                                                StorySegmentEntity(
-                                                    storyId = story.id,
-                                                    memoryId = memory.id,
-                                                    text = memory.text,
-                                                    imageUri = memory.imageUri,
-                                                    createdAt = memory.timestampMillis,
-                                                )
-                                            )
-
-
-                                            story.memories.add(0, memory)
-                                        }
+                                        addMemoryToStory(story, memory)
                                     }
                                 )
                             }
@@ -173,6 +164,14 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
+
+                                val (loaded, stories) = getStories()
+
+                                if (!loaded) {
+                                    Surface { Text("Loading...") }
+                                    return@composable
+                                }
+
                                 StoryListScreen(
                                     stories = stories,
                                     onOpen = { id -> nav.navigate("detail/$id") },
@@ -195,13 +194,13 @@ class TraverseDemoActivity : ComponentActivity() {
                                 CreateStoryScreen(
                                     onCancel = { nav.popBackStack() },
                                     onCreate = { title, location ->
-                                        val newStory = OldStory(
+                                        val newStory = Story(
                                             id = idGen.getAndIncrement(),
                                             title = title,
                                             dateMillis = System.currentTimeMillis(),
                                             location = location
                                         )
-                                        stories.add(0, newStory)
+                                        createStory(newStory)
                                         nav.navigate("detail/${newStory.id}") {
                                             popUpTo("list") { inclusive = false }
                                         }
@@ -225,7 +224,18 @@ class TraverseDemoActivity : ComponentActivity() {
                                 arguments = listOf(navArgument("id") { type = NavType.LongType })
                             ) { backStack ->
                                 val id = backStack.arguments!!.getLong("id")
-                                val story = stories.first { it.id == id }
+
+                                val (loaded, story) = getStoryById(id)
+                                if (!loaded) {
+                                    Surface { Text("Loading...") }
+                                    return@composable
+                                }
+
+                                if (story == null) {
+                                    Log.e("StoryDetailScreen", "Story with id $id not found")
+                                    Surface { Text("Story not found...") }
+                                    return@composable
+                                }
 
                                 currentTitle = story.title
                                 currentSubtitle = SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
@@ -265,20 +275,33 @@ class TraverseDemoActivity : ComponentActivity() {
                                 arguments = listOf(navArgument("id") { type = NavType.LongType })
                             ) { backStack ->
                                 val id = backStack.arguments!!.getLong("id")
-                                val story = stories.first { it.id == id }
+
+                                val (loaded, story) = getStoryById(id)
+                                if (!loaded) {
+                                    Surface { Text("Loading...") }
+                                    return@composable
+                                }
+
+                                if (story == null) {
+                                    Log.e("StoryDetailScreen", "Story with id $id not found")
+                                    Surface { Text("Story not found...") }
+                                    return@composable
+                                }
+
                                 SegmentEditorScreen(
                                     onCancel = { nav.popBackStack() },
                                     onSubmit = { text, uri: Uri? ->
-                                        story.memories.add(
-                                            0,
-                                            Memory(
-                                                idGen.getAndIncrement(),
-                                                timestampMillis = System.currentTimeMillis(),
-                                                type = Memory.Type.TEXT,
-                                                text = text,
-                                                imageUri = uri?.toString(),
-                                            )
-                                        )
+                                        // TODO: Re-enable this
+//                                        story.memories.add(
+//                                            0,
+//                                            Memory(
+//                                                idGen.getAndIncrement(),
+//                                                timestampMillis = System.currentTimeMillis(),
+//                                                type = Memory.Type.TEXT,
+//                                                text = text,
+//                                                imageUri = uri?.toString(),
+//                                            )
+//                                        )
                                         nav.popBackStack()
                                     }
                                 )
