@@ -3,3 +3,4 @@
 .kotlin/sessions
 local.properties
 gradle/libs.versions.toml
+/.idea
