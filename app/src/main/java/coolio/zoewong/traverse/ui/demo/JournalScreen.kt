@@ -29,7 +29,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.OldStory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,9 +50,9 @@ data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null
 @Composable
 fun JournalScreen(
     memories: List<Memory>,
-    stories: List<Story>,
+    stories: List<OldStory>,
     onSend: (String?, Uri?) -> Unit,
-    onAddToStory: (Memory, Story) -> Unit
+    onAddToStory: (Memory, OldStory) -> Unit
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
