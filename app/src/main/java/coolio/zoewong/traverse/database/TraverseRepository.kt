@@ -19,7 +19,13 @@ class TraverseRepository(
     private val mediaStore: TraverseMedia,
 ) {
     private val storySegments = database.storySegments
-    private val memories = database.memories
+
+    /**
+     * Create, read, and modify memories.
+     */
+    val memories = MemoriesRepo(
+        database.memories
+    )
 
     /**
      * Create, read, and modify stories.
@@ -34,110 +40,173 @@ class TraverseRepository(
      */
     val media = mediaStore
 
-    /**
-     * Gets the MemoryEntity for the given ID.
-     */
+    @Deprecated("Use memories.get instead.")
     suspend fun getMemory(id: Long): MemoryEntity? {
-        return withContext(IO) {
-            memories.get(id)
-        }
+        return memories.get(id)
     }
 
-    /**
-     * Gets all MemoryEntity instances between the provided timestamp range (inclusive).
-     */
+    @Deprecated("Use memories.getBetween instead.")
     suspend fun getMemoriesBetween(from: Long, to: Long): List<MemoryEntity> {
-        return withContext(IO) {
-            memories.getBetween(from, to)
-        }
+        return memories.getBetween(from, to)
     }
 
-    /**
-     * Gets the previous N (count) MemoryEntity instances to the given id.
-     */
+    @Deprecated("Use memories.getPrevious instead.")
     suspend fun getPreviousMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
-        return withContext(IO) {
-            memories.getPrevious(relativeTo.id, count)
-        }
+        return memories.getPrevious(relativeTo, count)
     }
 
-    /**
-     * Gets the next N (count) MemoryEntity instances to the given id.
-     */
+    @Deprecated("Use memories.getNext instead.")
     suspend fun getNextMemories(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
-        return withContext(IO) {
-            memories.getNext(relativeTo.id, count)
-        }
+        return memories.getNext(relativeTo, count)
     }
 
-    /**
-     * Inserts a MemoryEntity into the database, returning a copy of the
-     * MemoryEntity with its new ID.
-     */
+    @Deprecated("Use memories.insert instead.")
     suspend fun insertMemory(memory: MemoryEntity): MemoryEntity {
-        return withContext(IO) {
-            val id = memories.insert(memory)
-            memory.copy(id = id)
-        }
+        return memories.insert(memory)
     }
 
-    /**
-     * Deletes the MemoryEntity entry with the given ID from the database.
-     *
-     * It will also be removed from any stories it was a part of.
-     */
+    @Deprecated("Use memories.delete instead.")
     suspend fun deleteMemory(id: Long) {
-        return withContext(IO) {
-            memories.delete(id)
-        }
+        memories.delete(id)
     }
 
-    /**
-     * Deletes the given MemoryEntity from the database.
-     *
-     * It will also be removed from any stories it was a part of.
-     */
+    @Deprecated("Use memories.delete instead.")
     suspend fun deleteMemory(memory: MemoryEntity) {
-        deleteMemory(memory.id)
+        memories.delete(memory)
     }
 
-    /**
-     * Returns a flow emitting MemoryEntity instances from the database that were created
-     * after the provided timestamp (inclusive).
-     */
+    @Deprecated("Use memories.watchsince instead.")
     suspend fun watchMemoriesSince(timestamp: Long): Flow<List<MemoryEntity>> {
-        return database.memories.watchSince(timestamp)
-            .flowOn(IO)
+        return memories.watchSince(timestamp)
     }
 
-    /**
-     * Returns a flow emitting all MemoryEntity instances from the database.
-     *
-     * Note: This will return EVERYTHING.
-     *
-     * Prefer only fetching what is needed by using getMemoriesBetween or watchMemoriesSince.
-     */
+    @Deprecated("Use memories.watchAll instead.")
     suspend fun watchMemories(): Flow<List<MemoryEntity>> {
-        return database.memories.watchAll()
-            .flowOn(IO)
+        return memories.watchAll()
     }
 
-    /**
-     * Returns a flow emitting the timestamp of the oldest MemoryEntity in the database.
-     * This can be used to get the oldest memory in the database.
-     */
+    @Deprecated("Use memories.watchOldestTimestamp instead.")
     suspend fun watchOldestMemoryTimestamp(): Flow<Long> {
-        return database.memories.watchOldestTimestamp()
-            .flowOn(IO)
+        return memories.watchOldestTimestamp()
+    }
+
+    @Deprecated("Use memories.watchNewestTimestamp instead.")
+    suspend fun watchNewestMemoryTimestamp(): Flow<Long> {
+        return memories.watchNewestTimestamp()
     }
 
     /**
-     * Returns a flow emitting the timestamp of the newest memory in the database.
-     * This can be used to track if a new memory was added.
+     * Provides access to memories.
      */
-    suspend fun watchNewestMemoryTimestamp(): Flow<Long> {
-        return database.memories.watchNewestTimestamp()
-            .flowOn(IO)
+    class MemoriesRepo(
+        private val memories: MemoryAccess,
+    ) {
+
+        /**
+         * Gets the MemoryEntity for the given ID.
+         */
+        suspend fun get(id: Long): MemoryEntity? {
+            return withContext(IO) {
+                memories.get(id)
+            }
+        }
+
+        /**
+         * Gets all MemoryEntity instances between the provided timestamp range (inclusive).
+         */
+        suspend fun getBetween(from: Long, to: Long): List<MemoryEntity> {
+            return withContext(IO) {
+                memories.getBetween(from, to)
+            }
+        }
+
+        /**
+         * Gets the previous N (count) MemoryEntity instances to the given id.
+         */
+        suspend fun getPrevious(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
+            return withContext(IO) {
+                memories.getPrevious(relativeTo.id, count)
+            }
+        }
+
+        /**
+         * Gets the next N (count) MemoryEntity instances to the given id.
+         */
+        suspend fun getNext(relativeTo: MemoryEntity, count: Long): List<MemoryEntity> {
+            return withContext(IO) {
+                memories.getNext(relativeTo.id, count)
+            }
+        }
+
+        /**
+         * Inserts a MemoryEntity into the database, returning a copy of the
+         * MemoryEntity with its new ID.
+         */
+        suspend fun insert(memory: MemoryEntity): MemoryEntity {
+            return withContext(IO) {
+                val id = memories.insert(memory)
+                memory.copy(id = id)
+            }
+        }
+
+        /**
+         * Deletes the MemoryEntity entry with the given ID from the database.
+         *
+         * It will also be removed from any stories it was a part of.
+         */
+        suspend fun delete(id: Long) {
+            return withContext(IO) {
+                memories.delete(id)
+            }
+        }
+
+        /**
+         * Deletes the given MemoryEntity from the database.
+         *
+         * It will also be removed from any stories it was a part of.
+         */
+        suspend fun delete(memory: MemoryEntity) {
+            delete(memory.id)
+        }
+
+        /**
+         * Returns a flow emitting MemoryEntity instances from the database that were created
+         * after the provided timestamp (inclusive).
+         */
+        suspend fun watchSince(timestamp: Long): Flow<List<MemoryEntity>> {
+            return memories.watchSince(timestamp)
+                .flowOn(IO)
+        }
+
+        /**
+         * Returns a flow emitting all MemoryEntity instances from the database.
+         *
+         * Note: This will return EVERYTHING.
+         *
+         * Prefer only fetching what is needed by using getMemoriesBetween or watchMemoriesSince.
+         */
+        suspend fun watchAll(): Flow<List<MemoryEntity>> {
+            return memories.watchAll()
+                .flowOn(IO)
+        }
+
+        /**
+         * Returns a flow emitting the timestamp of the oldest MemoryEntity in the database.
+         * This can be used to get the oldest memory in the database.
+         */
+        suspend fun watchOldestTimestamp(): Flow<Long> {
+            return memories.watchOldestTimestamp()
+                .flowOn(IO)
+        }
+
+        /**
+         * Returns a flow emitting the timestamp of the newest memory in the database.
+         * This can be used to track if a new memory was added.
+         */
+        suspend fun watchNewestTimestamp(): Flow<Long> {
+            return memories.watchNewestTimestamp()
+                .flowOn(IO)
+        }
     }
     // -------- Story segments --------
 
