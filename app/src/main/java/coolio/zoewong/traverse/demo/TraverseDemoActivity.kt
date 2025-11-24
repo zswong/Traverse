@@ -25,11 +25,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
-import coolio.zoewong.traverse.database.MemoryEntity
 import coolio.zoewong.traverse.database.MemoryType
 import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Memory
-import coolio.zoewong.traverse.model.Segment
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.viewmodel.getMemories
 import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
@@ -55,7 +53,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class TraverseDemoActivity : ComponentActivity() {
 
-    private val idGen = AtomicLong(1)
+    val idGen = AtomicLong(1)
     private val stories = mutableListOf<Story>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,15 +63,17 @@ class TraverseDemoActivity : ComponentActivity() {
         if (stories.isEmpty()) {
             fun seed(title: String, location: String?): Story {
                 val s = Story(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
-                s.segments += Segment(
-                    idGen.getAndIncrement(),
-                    System.currentTimeMillis(),
-                    "Walked from Pacific Center... French Toast!!!"
+                s.memories += Memory(
+                    idGen.getAndDecrement(),
+                    timestampMillis = System.currentTimeMillis(),
+                    type = Memory.Type.TEXT,
+                    text = "Walked from Pacific Center... French Toast!!!"
                 )
-                s.segments += Segment(
+                s.memories += Memory(
                     idGen.getAndIncrement(),
-                    System.currentTimeMillis(),
-                    "Later... doughnuts. Delicious!"
+                    timestampMillis = System.currentTimeMillis(),
+                    type = Memory.Type.TEXT,
+                    text = "Later... doughnuts. Delicious!"
                 )
                 return s
             }
@@ -145,33 +145,24 @@ class TraverseDemoActivity : ComponentActivity() {
                                             )
                                         )
                                     },
-                                    onAddToStory = { msg, story ->
+                                    onAddToStory = { memory, story ->
 
                                         CoroutineScope(Dispatchers.IO).launch {
                                             val repo = dbstate.waitForReady()
-
-
-                                            val memory = repo.memories.get(msg.id) ?: return@launch
-
-
-                                            val (text, imageUri) = when (memory.type) {
-                                                MemoryType.TEXT -> memory.contents to null
-                                                MemoryType.IMAGE -> null to memory.contents
-                                            }
 
 
                                             repo.insertStorySegment(
                                                 StorySegmentEntity(
                                                     storyId = story.id,
                                                     memoryId = memory.id,
-                                                    text = text,
-                                                    imageUri = imageUri,
-                                                    createdAt = memory.timestamp,
+                                                    text = memory.text,
+                                                    imageUri = memory.imageUri,
+                                                    createdAt = memory.timestampMillis,
                                                 )
                                             )
 
 
-                                            story.segments.add(0, Segment(idGen.getAndIncrement(), memory.timestamp, text ?: "", imageUri))
+                                            story.memories.add(0, memory)
                                         }
                                     }
                                 )
@@ -279,9 +270,15 @@ class TraverseDemoActivity : ComponentActivity() {
                                 SegmentEditorScreen(
                                     onCancel = { nav.popBackStack() },
                                     onSubmit = { text, uri: Uri? ->
-                                        story.segments.add(
+                                        story.memories.add(
                                             0,
-                                            Segment(idGen.getAndIncrement(), System.currentTimeMillis(), text, imageUri = uri?.toString())
+                                            Memory(
+                                                idGen.getAndIncrement(),
+                                                timestampMillis = System.currentTimeMillis(),
+                                                type = Memory.Type.TEXT,
+                                                text = text,
+                                                imageUri = uri?.toString(),
+                                            )
                                         )
                                         nav.popBackStack()
                                     }
