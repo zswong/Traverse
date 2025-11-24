@@ -2,6 +2,7 @@
 
 package coolio.zoewong.traverse.demo
 
+import android.database.sqlite.SQLiteConstraintException
 import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Bundle
@@ -109,7 +110,14 @@ class TraverseDemoActivity : ComponentActivity() {
                 AppState {
                     val createMemory = editDatabase(::toCreateMemory)
                     val createStory = editDatabase(::toCreateStory)
-                    val addMemoryToStory = editDatabase(::toAddMemoryToStory)
+                    val addMemoryToStory =
+                        editDatabase { db, memory: Memory, story: Story ->
+                            try {
+                                toAddMemoryToStory(db, story, memory)
+                            } catch (e: SQLiteConstraintException) {
+                                Log.i("addMemoryToStory", "Memory ${memory.id} already in story ${story.id}")
+                            }
+                        }
                     val createMemoryAndAddToStory =
                         editDatabase { db, memory: Memory, story: Story ->
                             toCreateMemory(db, memory)
@@ -157,9 +165,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                             )
                                         )
                                     },
-                                    onAddToStory = { memory, story ->
-                                        addMemoryToStory(story, memory)
-                                    }
+                                    onAddToStory = addMemoryToStory
                                 )
                             }
 
