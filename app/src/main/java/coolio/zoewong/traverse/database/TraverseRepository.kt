@@ -26,6 +26,7 @@ class TraverseRepository(
      */
     val stories = StoriesRepo(
         database.stories,
+        database.assocStoriesMemories,
     )
 
     /**
@@ -82,6 +83,8 @@ class TraverseRepository(
 
     /**
      * Deletes the MemoryEntity entry with the given ID from the database.
+     *
+     * It will also be removed from any stories it was a part of.
      */
     suspend fun deleteMemory(id: Long) {
         return withContext(IO) {
@@ -91,6 +94,8 @@ class TraverseRepository(
 
     /**
      * Deletes the given MemoryEntity from the database.
+     *
+     * It will also be removed from any stories it was a part of.
      */
     suspend fun deleteMemory(memory: MemoryEntity) {
         deleteMemory(memory.id)
@@ -159,8 +164,8 @@ class TraverseRepository(
      */
     class StoriesRepo(
         private val stories: StoryAccess,
-    )
-        {
+        private val assocWithMemories: StoryMemoryAssociationAccess,
+    ) {
 
         /**
          * Inserts a StoryEntity into the database, returning a copy of the
@@ -198,6 +203,48 @@ class TraverseRepository(
             delete(story.id)
         }
 
+        /**
+         * Returns a flow emitting a list of all MemoryEntity instances that
+         * are part of the specified story.
+         */
+        suspend fun watchMemoriesOf(story: StoryEntity): Flow<List<MemoryEntity>> {
+            return assocWithMemories.watchMemoriesByStory(story.id)
+        }
+
+        /**
+         * Associates a MemoryEntity with a StoryEntity, "adding" the
+         * memory to the story.
+         *
+         * Throws if:
+         *  - The memory is already in the story.
+         *  - The story doesn't exist.
+         *  - The memory doesn't exist.
+         */
+        suspend fun addMemory(story: StoryEntity, memory: MemoryEntity) {
+            return withContext(IO) {
+                assocWithMemories.insert(
+                    StoryMemoryAssociation(
+                        storyId = story.id,
+                        memoryId = memory.id,
+                    )
+                )
+            }
+        }
+
+        /**
+         * Removes an association between a MemoryEntity and StoryEntity, "removing" the
+         * memory from the story.
+         *
+         * Does nothing if the memory is not already in the story.
+         */
+        suspend fun removeMemory(story: StoryEntity, memory: MemoryEntity) {
+            return withContext(IO) {
+                assocWithMemories.delete(
+                    storyId = story.id,
+                    memoryId = memory.id,
+                )
+            }
+        }
     }
 
     companion object {
