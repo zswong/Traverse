@@ -13,6 +13,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coolio.zoewong.traverse.database.StorySegmentEntity
+import coolio.zoewong.traverse.model.Memory
+import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
 import coolio.zoewong.traverse.model.OldStory
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
@@ -24,24 +27,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoryDetailScreen(
-    story: OldStory,
+    story: Story,
     onBack: () -> Unit,
     onAddToStory: () -> Unit
 ) {
-    val dbState = DatabaseState.current
-
     // 从 Room 里读出的 segment 列表
-    var segments by remember { mutableStateOf<List<StorySegmentEntity>>(emptyList()) }
+    val (loaded, fullStory) = storyWithMemories(story)
 
-    // 监听数据库加载 & storyId 变化，然后订阅 Flow
-    LaunchedEffect(dbState.status, story.id) {
-        if (dbState.status == LoadStatus.LOADED) {
-            val repo = dbState.database
-            repo.watchStorySegments(story.id).collectLatest { list ->
-                segments = list
-            }
-        }
-    }
     Scaffold(
         topBar = {
 
@@ -72,8 +64,7 @@ fun StoryDetailScreen(
             )
 
             when {
-                dbState.status != LoadStatus.LOADED -> {
-
+                !loaded -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -84,7 +75,18 @@ fun StoryDetailScreen(
                     }
                 }
 
-                segments.isEmpty() -> {
+                fullStory.memories == null -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Error: could not find memories for story with ID ${story.id}")
+                    }
+                }
+
+                fullStory.memories.isEmpty() -> {
 
                     Box(
                         modifier = Modifier
@@ -109,7 +111,7 @@ fun StoryDetailScreen(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(segments, key = { it.id }) { seg ->
+                        items(fullStory.memories!!, key = { it.id }) { seg ->
                             StorySegmentCard(seg = seg)
                         }
                     }
@@ -120,7 +122,7 @@ fun StoryDetailScreen(
 }
 
 @Composable
-private fun StorySegmentCard(seg: StorySegmentEntity) {
+private fun StorySegmentCard(seg: Memory) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -137,7 +139,7 @@ private fun StorySegmentCard(seg: StorySegmentEntity) {
             val timeText = SimpleDateFormat(
                 "MMM dd, yyyy • HH:mm",
                 Locale.getDefault()
-            ).format(Date(seg.createdAt))
+            ).format(seg.timestampDate)
 
             Text(
                 text = timeText,

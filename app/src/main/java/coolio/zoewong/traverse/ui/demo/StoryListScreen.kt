@@ -20,7 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coolio.zoewong.traverse.model.OldStory
+import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.ui.effect.fadingEdge
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -31,7 +31,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoryListScreen(
-    stories: List<OldStory>,
+    stories: List<Story>,
     onOpen: (Long) -> Unit,
     onCreate: () -> Unit
 ) {
