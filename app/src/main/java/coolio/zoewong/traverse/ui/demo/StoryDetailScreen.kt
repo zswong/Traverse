@@ -12,11 +12,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
-import coolio.zoewong.traverse.model.OldStory
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
 import kotlinx.coroutines.flow.collectLatest

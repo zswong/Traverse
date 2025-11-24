@@ -29,7 +29,6 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import coolio.zoewong.traverse.model.OldStory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
