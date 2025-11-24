@@ -22,6 +22,13 @@ class TraverseRepository(
     private val memories = database.memories
 
     /**
+     * Create, read, and modify stories.
+     */
+    val stories = StoriesRepo(
+        database.stories,
+    )
+
+    /**
      * The media store for Traverse.
      */
     val media = mediaStore
@@ -145,6 +152,52 @@ class TraverseRepository(
     suspend fun watchStorySegments(storyId: Long): Flow<List<StorySegmentEntity>> {
         return storySegments.watchStorySegmentsForStory(storyId)
             .flowOn(IO)
+    }
+
+    /**
+     * Provides access to stories.
+     */
+    class StoriesRepo(
+        private val stories: StoryAccess,
+    )
+        {
+
+        /**
+         * Inserts a StoryEntity into the database, returning a copy of the
+         * StoryEntity with its new ID.
+         */
+        suspend fun insert(story: StoryEntity): StoryEntity {
+            return withContext(IO) {
+                val id = stories.insert(story)
+                story.copy(id = id)
+            }
+        }
+
+        /**
+         * Updates a StoryEntity in the database.
+         */
+        suspend fun update(story: StoryEntity) {
+            return withContext(IO) {
+                stories.update(story)
+            }
+        }
+
+        /**
+         * Deletes the StoryEntity entry with the given ID from the database.
+         */
+        suspend fun delete(id: Long) {
+            return withContext(IO) {
+                stories.delete(id)
+            }
+        }
+
+        /**
+         * Deletes the given MemoryEntity from the database.
+         */
+        suspend fun delete(story: StoryEntity) {
+            delete(story.id)
+        }
+
     }
 
     companion object {
