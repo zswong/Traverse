@@ -1,7 +1,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package coolio.zoewong.traverse.ui.demo
-
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,8 +34,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import java.sql.Timestamp
-
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.core.content.ContextCompat
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
 
@@ -53,10 +57,132 @@ fun JournalScreen(
 
 
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showStoryPicker by remember { mutableStateOf(false) }
+
+    //Speech to text
+    var isListening by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val selectionMode = selectedIds.isNotEmpty()
 
+    //Speech Recognizer
+    val speechRecognizer = remember { SpeechRecognizer.createSpeechRecognizer(context)}
 
-    var showStoryPicker by remember { mutableStateOf(false) }
+    //to start speech recognition
+    fun startSpeechRecognition(recognizer: SpeechRecognizer, context: Context) {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true) // force offline
+        }
+        /* //breach privacy?? only work for all devices that have offline speech recognition installed
+        val pm = context.packageManager
+        val activities = pm.queryIntentActivities(intent, 0)
+        if (activities.isEmpty()) {
+            Toast.makeText(
+                context,
+                "Offline speech recognition is not available on this device",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        */
+
+        try {
+            recognizer.startListening(intent)
+        } catch (e: SecurityException) {
+            Toast.makeText(context, "Microphone permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+    // permission launcher for microphone
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startSpeechRecognition(speechRecognizer, context)
+            isListening = true
+        } else {
+            // Permission denied
+            Toast.makeText(context, "Microphone permission is required for voice input", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    //listener
+    val speechListener = remember {
+        object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                isListening = true
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {
+                isListening = false
+            }
+
+            override fun onError(error: Int) {
+                isListening = false
+                when (error) {
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                        Toast.makeText(context, "Microphone permission denied", Toast.LENGTH_SHORT).show()
+                    }
+                    SpeechRecognizer.ERROR_NO_MATCH,
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                        Toast.makeText(context, "No speech recognized", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        Toast.makeText(context, "Speech recognition error: $error", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            override fun onResults(results: Bundle?) {
+                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { matches ->
+                    if (matches.isNotEmpty()) {
+                        val spokenText = matches[0]
+                        input = spokenText
+                        Toast.makeText(context, "Voice input received", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                isListening = false
+            }
+
+            override fun onPartialResults(partialResults: Bundle?) {}
+
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        }
+    }
+
+    // Set up speech recognizer
+    LaunchedEffect(Unit) {
+        speechRecognizer.setRecognitionListener(speechListener)
+    }
+    //Clean up on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            speechRecognizer.destroy()
+        }
+    }
+
+    //to handle speech recognition toggle
+    fun toggleSpeechRecognition() {
+        if (isListening) {
+            speechRecognizer.stopListening()
+            isListening = false
+        } else {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (hasPermission) {
+                startSpeechRecognition(speechRecognizer, context)
+            } else {
+                microphonePermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
+        }
+    }
+
+
 
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -103,6 +229,18 @@ fun JournalScreen(
                         Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val timeText = remember(m.timestamp) {
+                            SimpleDateFormat(
+                                "MMM dd, yyyy • HH:mm",
+                                Locale.getDefault()
+                            ).format(Date(m.timestamp))
+                        }
+                        Text(
+                            text = timeText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+
                         if (!m.text.isNullOrBlank()) {
                             Text(m.text)
                         }
@@ -116,17 +254,6 @@ fun JournalScreen(
                                     .clip(MaterialTheme.shapes.extraLarge)
                             )
                         }
-                        val timeText = remember(m.timestamp) {
-                            SimpleDateFormat(
-                                "MMM dd, yyyy • HH:mm",
-                                Locale.getDefault()
-                            ).format(Date(m.timestamp))
-                        }
-                        Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
                     }
                 }
             }
@@ -161,8 +288,6 @@ fun JournalScreen(
                 }
             }
         }
-
-
         Surface(shadowElevation = 6.dp) {
             Row(
                 Modifier
@@ -173,6 +298,17 @@ fun JournalScreen(
                 IconButton(onClick = { showAttach = true }) {
                     Icon(Icons.Outlined.AttachFile, contentDescription = "attach")
                 }
+                IconButton(
+                    onClick = { toggleSpeechRecognition() }
+                ) {
+                    Icon(
+                        if (isListening) Icons.Outlined.Mic else Icons.Outlined.Mic,
+                        contentDescription = if (isListening) "Stop listening" else "Start voice input",
+                        tint = if (isListening) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
