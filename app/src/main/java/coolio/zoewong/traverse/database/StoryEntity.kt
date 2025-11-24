@@ -29,6 +29,12 @@ data class StoryEntity(
     val title: String,
 
     /**
+     * The timestamp of the story.
+     */
+    @ColumnInfo(name = "timestamp")
+    val timestamp: Long,
+
+    /**
      * The cover image for the story.
      */
     @ColumnInfo(name = "cover_uri")
@@ -37,7 +43,13 @@ data class StoryEntity(
     /**
      * The location where the story takes place.
      */
-    @ColumnInfo(name = "loccation")
-    val location: LatLng?
+    @ColumnInfo(name = "location")
+    val location: LatLng?,
+
+    /**
+     * The name of the location where the story takes place.
+     */
+    @ColumnInfo(name = "location_name")
+    val locationName: String?
 
 )

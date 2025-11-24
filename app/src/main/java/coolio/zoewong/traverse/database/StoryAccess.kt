@@ -14,6 +14,12 @@ import kotlinx.coroutines.flow.Flow
 interface StoryAccess {
 
     /**
+     * Gets the StoryEntity for the given ID.
+     */
+    @Query("SELECT * FROM stories WHERE id = :id")
+    suspend fun get(id: Long): StoryEntity?
+
+    /**
      * Inserts a StoryEntity into the database, returning its new ID.
      *
      * The ID of the provided memory MUST be 0.
