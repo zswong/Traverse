@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
  * When accessing the data, use TraverseRepository instead.
  */
 @Database(
-    version = 4,
+    version = 6,
     entities = [
         MemoryEntity::class,
         StoryEntity::class,

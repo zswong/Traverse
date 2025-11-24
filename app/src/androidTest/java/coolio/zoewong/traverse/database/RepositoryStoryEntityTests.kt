@@ -39,6 +39,8 @@ class RepositoryStoryEntityTests {
                     title = "My Story",
                     coverUri = Uri.parse("https://example.com"),
                     location = LatLng(1.0, -1.0),
+                    locationName = "The Ocean",
+                    timestamp = now,
                 )
             )
             assertEquals(1, db.stories.count())
@@ -48,6 +50,8 @@ class RepositoryStoryEntityTests {
                     title = "My Story 2",
                     coverUri = Uri.parse("https://example2.com"),
                     location = LatLng(2.0, -2.0),
+                    locationName = "The Ocean",
+                    timestamp = now,
                 )
             )
             assertEquals(2, db.stories.count())
@@ -67,6 +71,8 @@ class RepositoryStoryEntityTests {
                     title = "My Story",
                     coverUri = Uri.parse("https://example.com"),
                     location = LatLng(1.0, -1.0),
+                    locationName = "The Ocean",
+                    timestamp = now,
                 )
             )
 
@@ -88,6 +94,8 @@ class RepositoryStoryEntityTests {
                     title = "My Story",
                     coverUri = Uri.parse("https://example.com"),
                     location = LatLng(1.0, -1.0),
+                    locationName = "The Ocean",
+                    timestamp = now
                 )
             )
 
@@ -111,8 +119,20 @@ class RepositoryStoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 5000, contents = "message 5"),
         )
         val stories = listOf(
-            StoryEntity(title = "Story 1", coverUri = null, location = null),
-            StoryEntity(title = "Story 2", coverUri = null, location = null),
+            StoryEntity(
+                title = "Story 1",
+                coverUri = null,
+                location = null,
+                locationName = null,
+                timestamp = now
+            ),
+            StoryEntity(
+                title = "Story 2",
+                coverUri = null,
+                location = null,
+                locationName = null,
+                timestamp = now
+            ),
         )
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.stories.count())
@@ -171,7 +191,13 @@ class RepositoryStoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 3000, contents = "message 3"),
         )
         val stories = listOf(
-            StoryEntity(title = "Story 1", coverUri = null, location = null),
+            StoryEntity(
+                title = "Story 1",
+                coverUri = null,
+                location = null,
+                locationName = null,
+                timestamp = now
+            ),
         )
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.stories.count())
@@ -215,7 +241,13 @@ class RepositoryStoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 2000, contents = "message 2"),
         )
         val stories = listOf(
-            StoryEntity(title = "Story 1", coverUri = null, location = null),
+            StoryEntity(
+                title = "Story 1",
+                coverUri = null,
+                location = null,
+                locationName = null,
+                timestamp = now
+            ),
         )
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.stories.count())
@@ -257,7 +289,13 @@ class RepositoryStoryEntityTests {
             MemoryEntity(type = MemoryType.TEXT, timestamp = now + 2000, contents = "message 2"),
         )
         val stories = listOf(
-            StoryEntity(title = "Story 1", coverUri = null, location = null),
+            StoryEntity(
+                title = "Story 1",
+                coverUri = null,
+                location = null,
+                locationName = null,
+                timestamp = now
+            ),
         )
         withTemporaryDatabase(tempdir) { repo, db ->
             assertEquals("sanity check", 0, db.stories.count())

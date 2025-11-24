@@ -182,6 +182,15 @@ class TraverseRepository(
     ) {
 
         /**
+         * Gets the StoryEntity for the given ID.
+         */
+        suspend fun get(id: Long): StoryEntity? {
+            return withContext(IO) {
+                stories.get(id)
+            }
+        }
+
+        /**
          * Inserts a StoryEntity into the database, returning a copy of the
          * StoryEntity with its new ID.
          */
@@ -215,6 +224,17 @@ class TraverseRepository(
          */
         suspend fun delete(story: StoryEntity) {
             delete(story.id)
+        }
+
+        /**
+         * Returns a flow emitting all StoryEntity instances from the database.
+         *
+         * To get the MemoryEntity instances associated with the returned story, use
+         * watchMemoriesOf.
+         */
+        suspend fun watchAll(): Flow<List<StoryEntity>> {
+            return stories.watchAll()
+                .flowOn(IO)
         }
 
         /**
