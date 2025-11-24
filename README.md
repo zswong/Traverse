@@ -4,5 +4,5 @@ Quick Pitch for Traverse:
 
 https://www.youtube.com/watch?v=xM1BQn0mhs4
 
-Main Website:
+Visit our web at:
 https://xuliuleon0108.github.io/Traverse.github.io/ 
