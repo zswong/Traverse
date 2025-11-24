@@ -33,6 +33,7 @@ import coolio.zoewong.traverse.model.viewmodel.getStories
 import coolio.zoewong.traverse.model.viewmodel.getStoryById
 import coolio.zoewong.traverse.model.viewmodel.newEffectToAddMemoryToStory
 import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
+import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemoryAndAddToStory
 import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateStory
 import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
 import coolio.zoewong.traverse.ui.demo.AppShell
@@ -49,6 +50,7 @@ import coolio.zoewong.traverse.ui.theme.ThemeManager
 import coolio.zoewong.traverse.ui.theme.TraverseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -89,7 +91,7 @@ class TraverseDemoActivity : ComponentActivity() {
 //        }
 
         setContent {
-            TraverseTheme{
+            TraverseTheme {
                 val nav = rememberNavController()
                 var currentTitle by remember { mutableStateOf("Journal") }
                 var currentSubtitle by remember { mutableStateOf<String?>(null) }
@@ -108,6 +110,7 @@ class TraverseDemoActivity : ComponentActivity() {
                     val createMemory = newEffectToCreateMemory()
                     val createStory = newEffectToCreateStory()
                     val addMemoryToStory = newEffectToAddMemoryToStory()
+                    val createMemoryAndAddToStory = newEffectToCreateMemoryAndAddToStory()
 
                     AppShell(
                         nav = nav,
@@ -236,8 +239,9 @@ class TraverseDemoActivity : ComponentActivity() {
                                 }
 
                                 currentTitle = story.title
-                                currentSubtitle = SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
-                                    .format(Date(story.dateMillis))
+                                currentSubtitle =
+                                    SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
+                                        .format(Date(story.dateMillis))
                                 customNavigationIcon = {
                                     IconButton(onClick = { nav.popBackStack() }) {
                                         Icon(
@@ -289,17 +293,15 @@ class TraverseDemoActivity : ComponentActivity() {
                                 SegmentEditorScreen(
                                     onCancel = { nav.popBackStack() },
                                     onSubmit = { text, uri: Uri? ->
-                                        // TODO: Re-enable this
-//                                        story.memories.add(
-//                                            0,
-//                                            Memory(
-//                                                idGen.getAndIncrement(),
-//                                                timestampMillis = System.currentTimeMillis(),
-//                                                type = Memory.Type.TEXT,
-//                                                text = text,
-//                                                imageUri = uri?.toString(),
-//                                            )
-//                                        )
+                                        val memory = Memory(
+                                            id = AUTOMATICALLY_GENERATED_ID,
+                                            timestampMillis = System.currentTimeMillis(),
+                                            type = Memory.Type.TEXT,
+                                            text = text,
+                                            imageUri = uri?.toString(),
+                                        )
+
+                                        createMemoryAndAddToStory(memory, story)
                                         nav.popBackStack()
                                     }
                                 )

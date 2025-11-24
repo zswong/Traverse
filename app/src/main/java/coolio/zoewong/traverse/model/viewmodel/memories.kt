@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import coolio.zoewong.traverse.model.Memory
+import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.toDatabase
 import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
@@ -52,6 +53,27 @@ fun newEffectToCreateMemory(): (memory: Memory) -> Unit {
             CoroutineScope(Dispatchers.IO).launch {
                 dbstate.waitForReady().memories.insert(
                     memory.toDatabase()
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Creates a function that when called, creates a memory and adds it to the given story.
+ */
+@Composable
+fun newEffectToCreateMemoryAndAddToStory(): (memory: Memory, story: Story) -> Unit {
+    val context = LocalContext.current
+    val dbstate = DatabaseState.current
+    return remember(context, dbstate) {
+        fun(memory: Memory, story: Story) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val db = dbstate.waitForReady()
+                db.memories.insert(memory.toDatabase())
+                db.stories.addMemory(
+                    story.toDatabase(),
+                    memory.toDatabase(),
                 )
             }
         }
