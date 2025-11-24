@@ -131,12 +131,14 @@ class TraverseDemoActivity : ComponentActivity() {
                                                     MemoryType.TEXT -> ChatMsg(
                                                         id = mem.id,
                                                         text = mem.contents,
-                                                        imageUri = null
+                                                        imageUri = null,
+                                                        timestamp = mem.timestamp
                                                     )
                                                     MemoryType.IMAGE -> ChatMsg(
                                                         id = mem.id,
                                                         text = null,
-                                                        imageUri = mem.contents
+                                                        imageUri = mem.contents,
+                                                        timestamp = mem.timestamp
                                                     )
                                                 }
                                             }

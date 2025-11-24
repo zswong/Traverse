@@ -35,9 +35,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import java.sql.Timestamp
 
 
-data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null)
+data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -107,7 +108,7 @@ fun JournalScreen(
                         }
                         if (!m.imageUri.isNullOrBlank()) {
                             AsyncImage(
-                                model = m.imageUri,   // ← 直接用 URI 字符串
+                                model = m.imageUri,
                                 contentDescription = "photo",
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -115,7 +116,17 @@ fun JournalScreen(
                                     .clip(MaterialTheme.shapes.extraLarge)
                             )
                         }
-
+                        val timeText = remember(m.timestamp) {
+                            SimpleDateFormat(
+                                "MMM dd, yyyy • HH:mm",
+                                Locale.getDefault()
+                            ).format(Date(m.timestamp))
+                        }
+                        Text(
+                            text = timeText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
             }

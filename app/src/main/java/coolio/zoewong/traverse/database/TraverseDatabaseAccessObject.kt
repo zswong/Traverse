@@ -94,7 +94,7 @@ interface TraverseDatabaseAccessObject {
     @Query(
         "SELECT * FROM story_segments " +
                 "WHERE story_id = :storyId " +
-                "ORDER BY created_at DESC"
+                "ORDER BY created_at ASC"
     )
     fun watchStorySegmentsForStory(storyId: Long): Flow<List<StorySegmentEntity>>
 }
