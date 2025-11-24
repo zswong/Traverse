@@ -25,10 +25,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
-import coolio.zoewong.traverse.database.MemoryType
 import coolio.zoewong.traverse.database.StorySegmentEntity
 import coolio.zoewong.traverse.model.Memory
-import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.OldStory
 import coolio.zoewong.traverse.model.viewmodel.getMemories
 import coolio.zoewong.traverse.model.viewmodel.newEffectToCreateMemory
 import coolio.zoewong.traverse.ui.demo.AppShell
@@ -54,15 +53,15 @@ import java.util.concurrent.atomic.AtomicLong
 class TraverseDemoActivity : ComponentActivity() {
 
     val idGen = AtomicLong(1)
-    private val stories = mutableListOf<Story>()
+    private val stories = mutableListOf<OldStory>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
 
         if (stories.isEmpty()) {
-            fun seed(title: String, location: String?): Story {
-                val s = Story(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
+            fun seed(title: String, location: String?): OldStory {
+                val s = OldStory(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
                 s.memories += Memory(
                     idGen.getAndDecrement(),
                     timestampMillis = System.currentTimeMillis(),
@@ -196,7 +195,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                 CreateStoryScreen(
                                     onCancel = { nav.popBackStack() },
                                     onCreate = { title, location ->
-                                        val newStory = Story(
+                                        val newStory = OldStory(
                                             id = idGen.getAndIncrement(),
                                             title = title,
                                             dateMillis = System.currentTimeMillis(),

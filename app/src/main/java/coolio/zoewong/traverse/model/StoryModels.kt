@@ -1,6 +1,6 @@
 package coolio.zoewong.traverse.model
 
-data class Story(
+data class OldStory(
     val id: Long,
     val title: String,
     val dateMillis: Long,
