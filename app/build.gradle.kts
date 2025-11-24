@@ -58,6 +58,9 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.documentfile)
+    implementation(libs.play.services.maps)
+    //implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -73,5 +76,13 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Accompanist
+    implementation(libs.accompanist.permissions)
+
+    // Tried Switching to ML Kit for guaranteed on-device processing but doesn't work
+    //implementation("com.google.android.gms:play-services-mlkit-speech:17.0.1")
+
+
 
 }
