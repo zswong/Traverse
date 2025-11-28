@@ -2,6 +2,8 @@ package coolio.zoewong.traverse.ui.state
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import coolio.zoewong.traverse.ui.provider.MemoryListProvider
+import coolio.zoewong.traverse.ui.provider.StoryListProvider
 import coolio.zoewong.traverse.util.MutableWaitFor
 
 /**
@@ -13,7 +15,14 @@ fun AppState(children: @Composable () -> Unit) {
 
     SplashScreenStateProvider {
         DatabaseStateProvider(onReady = splashScreenWaitsForThis("database ready")) {
-            children()
+
+            // Always keep the list of memories and stories loaded.
+            // Keep the splash screen visible until they're ready.
+            MemoryListProvider(onReady = splashScreenWaitsForThis("memories loaded")) {
+                StoryListProvider(onReady = splashScreenWaitsForThis("stories loaded")) {
+                    children()
+                }
+            }
         }
     }
 }

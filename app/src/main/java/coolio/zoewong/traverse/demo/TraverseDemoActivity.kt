@@ -29,14 +29,6 @@ import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
-import coolio.zoewong.traverse.model.viewmodel.editDatabase
-import coolio.zoewong.traverse.model.viewmodel.getMemories
-import coolio.zoewong.traverse.model.viewmodel.getStories
-import coolio.zoewong.traverse.model.viewmodel.getStoryById
-import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
-import coolio.zoewong.traverse.model.viewmodel.toAddMemoryToStory
-import coolio.zoewong.traverse.model.viewmodel.toCreateMemory
-import coolio.zoewong.traverse.model.viewmodel.toCreateStory
 import coolio.zoewong.traverse.ui.demo.AppShell
 import coolio.zoewong.traverse.ui.demo.JournalScreen
 import coolio.zoewong.traverse.ui.demo.SegmentEditorScreen
@@ -45,14 +37,18 @@ import coolio.zoewong.traverse.ui.demo.StoryListScreen
 import coolio.zoewong.traverse.ui.demo.CreateStoryScreen
 import coolio.zoewong.traverse.ui.demo.SettingsScreen
 import coolio.zoewong.traverse.ui.demo.MapScreen
+import coolio.zoewong.traverse.ui.provider.getMemories
+import coolio.zoewong.traverse.ui.provider.getMemoriesManager
+import coolio.zoewong.traverse.ui.provider.getStories
+import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.AppState
-import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.theme.ThemeManager
 import coolio.zoewong.traverse.ui.theme.TraverseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -108,22 +104,6 @@ class TraverseDemoActivity : ComponentActivity() {
                 }
 
                 AppState {
-                    val createMemory = editDatabase(::toCreateMemory)
-                    val createStory = editDatabase(::toCreateStory)
-                    val addMemoryToStory =
-                        editDatabase { db, memory: Memory, story: Story ->
-                            try {
-                                toAddMemoryToStory(db, story, memory)
-                            } catch (e: SQLiteConstraintException) {
-                                Log.i("addMemoryToStory", "Memory ${memory.id} already in story ${story.id}")
-                            }
-                        }
-                    val createMemoryAndAddToStory =
-                        editDatabase { db, memory: Memory, story: Story ->
-                            toCreateMemory(db, memory)
-                            toAddMemoryToStory(db, story, memory)
-                        }
-
                     AppShell(
                         nav = nav,
                         currentTitle = currentTitle,
@@ -139,18 +119,13 @@ class TraverseDemoActivity : ComponentActivity() {
                                 customNavigationIcon = null
                                 customActions = null
 
-                                val (loaded, memories) = getMemories()
-                                val (loaded2, stories) = getStories()
-
-                                if (!loaded || !loaded2) {
-                                    Surface { Text("Loading...") }
-                                    return@composable
-                                }
+                                val memoriesManager = getMemoriesManager()
+                                val storiesManager = getStoriesManager()
 
                                 JournalScreen(
-                                    memories = memories,
-                                    stories = stories,
-                                    onSend = { text, uri ->
+                                    memories = getMemories(),
+                                    stories = getStories(),
+                                    onSend = { text, uri -> memoriesManager.fromCallback {
                                         createMemory(
                                             Memory(
                                                 id = AUTOMATICALLY_GENERATED_ID,
@@ -164,8 +139,10 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 },
                                             )
                                         )
-                                    },
-                                    onAddToStory = addMemoryToStory
+                                    }},
+                                    onAddToStory = { memory, story -> storiesManager.fromCallback {
+                                        addMemoryToStory(story, memory)
+                                    }},
                                 )
                             }
 
@@ -176,15 +153,8 @@ class TraverseDemoActivity : ComponentActivity() {
                                 customNavigationIcon = null
                                 customActions = null
 
-                                val (loaded, stories) = getStories()
-
-                                if (!loaded) {
-                                    Surface { Text("Loading...") }
-                                    return@composable
-                                }
-
                                 StoryListScreen(
-                                    stories = stories,
+                                    stories = getStories(),
                                     onOpen = { id -> nav.navigate("detail/$id") },
                                     onCreate = { nav.navigate("create") }
                                 )
@@ -202,18 +172,24 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
+                                val storiesManager = getStoriesManager()
                                 CreateStoryScreen(
                                     onCancel = { nav.popBackStack() },
                                     onCreate = { title, location ->
                                         val newStory = Story(
-                                            id = idGen.getAndIncrement(),
+                                            id = AUTOMATICALLY_GENERATED_ID,
                                             title = title,
                                             dateMillis = System.currentTimeMillis(),
                                             location = location
                                         )
-                                        createStory(newStory)
-                                        nav.navigate("detail/${newStory.id}") {
-                                            popUpTo("list") { inclusive = false }
+
+                                        storiesManager.fromCallback {
+                                            val createdStory = createStory(newStory)
+                                            withContext(Dispatchers.Main) {
+                                                nav.navigate("detail/${createdStory.id}") {
+                                                    popUpTo("list") { inclusive = false }
+                                                }
+                                            }
                                         }
                                     }
                                 )
@@ -236,12 +212,7 @@ class TraverseDemoActivity : ComponentActivity() {
                             ) { backStack ->
                                 val id = backStack.arguments!!.getLong("id")
 
-                                val (loaded, story) = getStoryById(id)
-                                if (!loaded) {
-                                    Surface { Text("Loading...") }
-                                    return@composable
-                                }
-
+                                val story = getStories().find { it.id == id }
                                 if (story == null) {
                                     Log.e("StoryDetailScreen", "Story with id $id not found")
                                     Surface { Text("Story not found...") }
@@ -288,12 +259,10 @@ class TraverseDemoActivity : ComponentActivity() {
                             ) { backStack ->
                                 val id = backStack.arguments!!.getLong("id")
 
-                                val (loaded, story) = getStoryById(id)
-                                if (!loaded) {
-                                    Surface { Text("Loading...") }
-                                    return@composable
-                                }
+                                val storiesManager = getStoriesManager()
+                                val memoriesManager = getMemoriesManager()
 
+                                val story = getStories().find { it.id == id }
                                 if (story == null) {
                                     Log.e("StoryDetailScreen", "Story with id $id not found")
                                     Surface { Text("Story not found...") }
@@ -311,7 +280,11 @@ class TraverseDemoActivity : ComponentActivity() {
                                             imageUri = uri?.toString(),
                                         )
 
-                                        createMemoryAndAddToStory(memory, story)
+                                        memoriesManager.fromCallback {
+                                            val createdMemory = createMemory(memory)
+                                            storiesManager.addMemoryToStory(story, createdMemory)
+                                        }
+
                                         nav.popBackStack()
                                     }
                                 )
