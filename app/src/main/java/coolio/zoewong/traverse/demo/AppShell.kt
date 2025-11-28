@@ -2,6 +2,8 @@
 
 package coolio.zoewong.traverse.ui.demo
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -9,8 +11,13 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import coolio.zoewong.traverse.ui.screen.splash.LoadingSplashScreen
+import coolio.zoewong.traverse.ui.state.DatabaseState
+import coolio.zoewong.traverse.ui.state.LoadStatus
 import kotlinx.coroutines.launch
 
 
@@ -34,6 +41,16 @@ fun AppShell(
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    val isReady = DatabaseState.current.status == LoadStatus.LOADED
+
+    AnimatedVisibility(
+        visible = !isReady,
+        exit = fadeOut(),
+        modifier = Modifier.zIndex(1000f)
+    ) {
+        LoadingSplashScreen()
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,

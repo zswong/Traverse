@@ -79,6 +79,7 @@ dependencies {
 
     // Accompanist
     implementation(libs.accompanist.permissions)
+    implementation(libs.accompanist.drawablepainter)
 
     // Tried Switching to ML Kit for guaranteed on-device processing but doesn't work
     //implementation("com.google.android.gms:play-services-mlkit-speech:17.0.1")
