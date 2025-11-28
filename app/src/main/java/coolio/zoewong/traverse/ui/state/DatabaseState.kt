@@ -61,7 +61,10 @@ val DatabaseState = compositionLocalOf<DatabaseStateAccessor> {
  *     }
  */
 @Composable
-fun DatabaseStateProvider(children: @Composable () -> Unit) {
+fun DatabaseStateProvider(
+    onReady: (() -> Unit)? = null,
+    children: @Composable () -> Unit,
+) {
     val tag = "DatabaseStateProvider"
     val context = LocalContext.current
     val waitForReady = remember { MutableWaitFor<TraverseRepository>() }
@@ -89,6 +92,7 @@ fun DatabaseStateProvider(children: @Composable () -> Unit) {
             )
             Log.i(tag, "Database loaded.")
             waitForReady.done(database)
+            onReady?.invoke()
         }
     }
 

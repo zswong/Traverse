@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import coolio.zoewong.traverse.ui.screen.splash.LoadingSplashScreen
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
+import coolio.zoewong.traverse.ui.state.shouldSplashScreenBeVisible
 import kotlinx.coroutines.launch
 
 
@@ -42,10 +43,8 @@ fun AppShell(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    val isReady = DatabaseState.current.status == LoadStatus.LOADED
-
     AnimatedVisibility(
-        visible = !isReady,
+        visible = shouldSplashScreenBeVisible(),
         exit = fadeOut(),
         modifier = Modifier.zIndex(1000f)
     ) {
