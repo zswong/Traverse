@@ -42,6 +42,7 @@ import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.*
 
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
@@ -243,18 +244,22 @@ fun JournalScreen(
                             color = MaterialTheme.colorScheme.outline
                         )
 
-                        if (!m.text.isNullOrBlank()) {
-                            Text(m.text)
+                        m.text.let {
+                            if (!it.isNullOrBlank()) {
+                                Text(it)
+                            }
                         }
-                        if (!m.imageUri.isNullOrBlank()) {
-                            AsyncImage(
-                                model = m.imageUri,
-                                contentDescription = "photo",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(220.dp)
-                                    .clip(MaterialTheme.shapes.extraLarge)
-                            )
+                        m.imageUri.let {
+                            if (!it.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = it,
+                                    contentDescription = "photo",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp)
+                                        .clip(MaterialTheme.shapes.extraLarge)
+                                )
+                            }
                         }
                     }
                 }

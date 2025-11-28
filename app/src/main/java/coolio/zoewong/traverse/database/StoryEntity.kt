@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.google.android.gms.maps.model.LatLng
+import java.util.Date
 
 /**
  * Database entity representing a story.
@@ -52,4 +53,13 @@ data class StoryEntity(
     @ColumnInfo(name = "location_name")
     val locationName: String?
 
-)
+) {
+
+    /**
+     * The timestamp of the story.
+     */
+    val timestampDate: Date
+        get() = Date(timestamp)
+
+}
+

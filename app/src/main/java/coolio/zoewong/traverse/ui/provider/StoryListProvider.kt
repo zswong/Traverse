@@ -16,8 +16,6 @@ import androidx.compose.runtime.setValue
 import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
-import coolio.zoewong.traverse.model.toDatabase
-import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.DatabaseStateAccessor
 import kotlinx.coroutines.CoroutineScope
@@ -46,7 +44,7 @@ fun StoryListProvider(
             val db = database.waitForReady()
             var loaded = false
             db.stories.watchAll().collect { newMemories ->
-                stories = newMemories.map { it.toModel() }
+                stories = newMemories
 
                 if (!loaded) {
                     @Suppress("AssignedValueIsNeverRead") // false positive
@@ -78,7 +76,7 @@ class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
      */
     suspend fun createStory(story: Story): Story {
         return databaseState.waitForReady().let {
-            it.stories.insert(story.toDatabase()).toModel()
+            it.stories.insert(story)
         }
     }
 
@@ -88,10 +86,7 @@ class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
     suspend fun addMemoryToStory(story: Story, memory: Memory) {
         databaseState.waitForReady().apply {
             try {
-                stories.addMemory(
-                    story.toDatabase(),
-                    memory.toDatabase(),
-                )
+                stories.addMemory(story, memory)
             } catch (e: SQLiteConstraintException) {
                 Log.i("addMemoryToStory", "Memory ${memory.id} already in story ${story.id}")
             }
@@ -103,10 +98,7 @@ class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
      */
     suspend fun removeMemoryFromStory(story: Story, memory: Memory) {
         databaseState.waitForReady().apply {
-            stories.removeMemory(
-                story.toDatabase(),
-                memory.toDatabase(),
-            )
+            stories.removeMemory(story, memory)
         }
     }
 
@@ -117,8 +109,8 @@ class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
 
         LaunchedEffect( story) {
             val db = databaseState.waitForReady()
-            db.stories.watchMemoriesOf(story.toDatabase()).collect {
-                memories = it.map { it.toModel() }
+            db.stories.watchMemoriesOf(story).collect {
+                memories = it
                 loaded = true
             }
         }

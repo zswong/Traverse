@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coolio.zoewong.traverse.database.AUTOMATICALLY_GENERATED_ID
+import coolio.zoewong.traverse.database.MemoryType
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.ui.demo.AppShell
@@ -130,18 +131,17 @@ class TraverseDemoActivity : ComponentActivity() {
                                         val uri = uri?.let {
                                             db.media.saveImage(context, it)
                                         }
-
+                                        val (type, contents) = when {
+                                            text != null -> MemoryType.TEXT to text
+                                            uri != null -> MemoryType.IMAGE to uri.toString()
+                                            else -> throw IllegalArgumentException("No message or image?")
+                                        }
                                         createMemory(
                                             Memory(
                                                 id = AUTOMATICALLY_GENERATED_ID,
-                                                timestampMillis = Calendar.getInstance().time.time,
-                                                text = text ?: "",
-                                                imageUri = uri?.toString(),
-                                                type = when {
-                                                    text != null -> Memory.Type.TEXT
-                                                    uri != null -> Memory.Type.IMAGE
-                                                    else -> throw IllegalArgumentException("No message or image?")
-                                                },
+                                                timestamp = Calendar.getInstance().time.time,
+                                                contents = contents,
+                                                type = type,
                                             )
                                         )
                                     }},
@@ -184,8 +184,10 @@ class TraverseDemoActivity : ComponentActivity() {
                                         val newStory = Story(
                                             id = AUTOMATICALLY_GENERATED_ID,
                                             title = title,
-                                            dateMillis = System.currentTimeMillis(),
-                                            location = location
+                                            timestamp = System.currentTimeMillis(),
+                                            locationName = location,
+                                            coverUri = null,
+                                            location = null,
                                         )
 
                                         storiesManager.fromCallback {
@@ -227,7 +229,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentTitle = story.title
                                 currentSubtitle =
                                     SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
-                                        .format(Date(story.dateMillis))
+                                        .format(Date(story.timestamp))
                                 customNavigationIcon = {
                                     IconButton(onClick = { nav.popBackStack() }) {
                                         Icon(
@@ -281,14 +283,18 @@ class TraverseDemoActivity : ComponentActivity() {
                                             val uri = uri?.let {
                                                 db.media.saveImage(context, it)
                                             }
-
+                                            val (type, contents) = when {
+                                                uri != null -> MemoryType.IMAGE to uri.toString()
+                                                text != null -> MemoryType.TEXT to text
+                                                else -> throw IllegalArgumentException("No message or image?")
+                                            }
                                             val memory = Memory(
                                                 id = AUTOMATICALLY_GENERATED_ID,
-                                                timestampMillis = System.currentTimeMillis(),
-                                                type = Memory.Type.TEXT,
-                                                text = text,
-                                                imageUri = uri?.toString(),
+                                                timestamp = System.currentTimeMillis(),
+                                                type = type,
+                                                contents = contents,
                                             )
+
                                             val createdMemory = createMemory(memory)
                                             storiesManager.addMemoryToStory(story, createdMemory)
                                         }

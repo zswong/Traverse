@@ -112,7 +112,7 @@ fun StoryListScreen(
                                             "MMMM dd, yyyy",
                                             Locale.getDefault()
                                         ).format(
-                                            Date(story.dateMillis)
+                                            story.timestampDate
                                         )
                                     Text(
                                         formattedDate,
@@ -131,7 +131,7 @@ fun StoryListScreen(
                                         )
                                         .background(Color(0xFFE0E0E0))
                                 ) {
-                                    if (!story.coverUri.isNullOrBlank()) {
+                                    if (story.coverUri != null) {
                                         AsyncImage(
                                             model = story.coverUri,
                                             contentDescription = "Story cover",
