@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
-import coolio.zoewong.traverse.model.viewmodel.storyWithMemories
+import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
 import kotlinx.coroutines.flow.collectLatest
@@ -30,7 +30,8 @@ fun StoryDetailScreen(
     onAddToStory: () -> Unit
 ) {
     // 从 Room 里读出的 segment 列表
-    val (loaded, fullStory) = storyWithMemories(story)
+    val storiesManager = getStoriesManager()
+    val (memories, loaded) = storiesManager.loadMemoriesOf(story)
 
     Scaffold(
         topBar = {
@@ -73,7 +74,7 @@ fun StoryDetailScreen(
                     }
                 }
 
-                fullStory.memories == null -> {
+                memories == null -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -84,7 +85,7 @@ fun StoryDetailScreen(
                     }
                 }
 
-                fullStory.memories.isEmpty() -> {
+                memories.isEmpty() -> {
 
                     Box(
                         modifier = Modifier
@@ -109,7 +110,7 @@ fun StoryDetailScreen(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(fullStory.memories!!, key = { it.id }) { seg ->
+                        items(memories, key = { it.id }) { seg ->
                             StorySegmentCard(seg = seg)
                         }
                     }

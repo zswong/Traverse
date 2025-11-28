@@ -13,7 +13,6 @@ data class Story(
     val dateMillis: Long,
     val location: String?,
     val coverUri: String? = null,
-    val memories: List<Memory>? = null,
 ) {
     val timestampDate get() = Date(dateMillis)
 }
@@ -21,16 +20,13 @@ data class Story(
 /**
  * Converts the database representation of a story into the model representation.
  */
-fun StoryEntity.toModel(
-    memories: List<Memory>? = null,
-): Story {
+fun StoryEntity.toModel(): Story {
     return Story(
         id = this.id,
         title = this.title,
         dateMillis = this.timestamp,
         location = this.locationName,
         coverUri = this.coverUri?.toString(),
-        memories = memories,
     )
 }
 
