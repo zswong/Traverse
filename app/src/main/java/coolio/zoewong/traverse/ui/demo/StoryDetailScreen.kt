@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.model.*
 import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
@@ -44,9 +45,9 @@ fun StoryDetailScreen(
                 .padding(padding)
         ) {
 
-            if (!story.location.isNullOrBlank()) {
+            if (!story.locationName.isNullOrBlank()) {
                 Text(
-                    text = story.location!!,
+                    text = story.locationName!!,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier

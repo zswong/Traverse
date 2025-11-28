@@ -13,8 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.setValue
 import coolio.zoewong.traverse.database.TraverseRepository
-import coolio.zoewong.traverse.model.toDatabase
-import coolio.zoewong.traverse.model.toModel
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.DatabaseStateAccessor
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +41,7 @@ fun MemoryListProvider(
             val db = database.waitForReady()
             var loaded = false
             db.memories.watchAll().collect { newMemories ->
-                memories = newMemories.map { it.toModel() }
+                memories = newMemories
 
                 if (!loaded) {
                     @Suppress("AssignedValueIsNeverRead") // false positive
@@ -75,8 +73,7 @@ class MemoryListManager(internal var databaseState: DatabaseStateAccessor) {
      */
     suspend fun createMemory(memory: Memory): Memory {
         return databaseState.waitForReady().let {
-            val entity = it.memories.insert(memory.toDatabase())
-            entity.toModel()
+            it.memories.insert(memory)
         }
     }
 }

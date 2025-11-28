@@ -3,7 +3,9 @@ package coolio.zoewong.traverse.database
 import androidx.room.ColumnInfo
 import androidx.room.ColumnInfo.Companion.INTEGER
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import java.util.Date
 
 
 /**
@@ -43,4 +45,12 @@ data class MemoryEntity(
     @ColumnInfo(name = "contents")
     val contents: String
 
-)
+) {
+
+    /**
+     * The timestamp of when the memory was created.
+     */
+    val timestampDate: Date
+        get() = Date(timestamp)
+
+}
