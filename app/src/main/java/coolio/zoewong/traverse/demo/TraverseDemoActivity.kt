@@ -111,6 +111,7 @@ class TraverseDemoActivity : ComponentActivity() {
                         navigationIcon = customNavigationIcon,
                         actions = customActions
                     ) {
+                        val context = LocalContext.current
                         NavHost(navController = nav, startDestination = "journal") {
 
                             composable("journal") {
@@ -125,7 +126,11 @@ class TraverseDemoActivity : ComponentActivity() {
                                 JournalScreen(
                                     memories = getMemories(),
                                     stories = getStories(),
-                                    onSend = { text, uri -> memoriesManager.fromCallback {
+                                    onSend = { text, uri -> memoriesManager.fromCallback { db ->
+                                        val uri = uri?.let {
+                                            db.media.saveImage(context, it)
+                                        }
+
                                         createMemory(
                                             Memory(
                                                 id = AUTOMATICALLY_GENERATED_ID,
@@ -272,15 +277,18 @@ class TraverseDemoActivity : ComponentActivity() {
                                 SegmentEditorScreen(
                                     onCancel = { nav.popBackStack() },
                                     onSubmit = { text, uri: Uri? ->
-                                        val memory = Memory(
-                                            id = AUTOMATICALLY_GENERATED_ID,
-                                            timestampMillis = System.currentTimeMillis(),
-                                            type = Memory.Type.TEXT,
-                                            text = text,
-                                            imageUri = uri?.toString(),
-                                        )
+                                        memoriesManager.fromCallback { db ->
+                                            val uri = uri?.let {
+                                                db.media.saveImage(context, it)
+                                            }
 
-                                        memoriesManager.fromCallback {
+                                            val memory = Memory(
+                                                id = AUTOMATICALLY_GENERATED_ID,
+                                                timestampMillis = System.currentTimeMillis(),
+                                                type = Memory.Type.TEXT,
+                                                text = text,
+                                                imageUri = uri?.toString(),
+                                            )
                                             val createdMemory = createMemory(memory)
                                             storiesManager.addMemoryToStory(story, createdMemory)
                                         }
