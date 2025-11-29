@@ -9,6 +9,9 @@ import android.content.ContentResolver
 import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.flow.first
+import com.google.android.gms.maps.model.LatLng
+
 
 
 /**
@@ -157,57 +160,7 @@ class TraverseRepository(
             return memories.watchNewestTimestamp()
                 .flowOn(IO)
         }
-        /**
-         * Export all memories in the database to the given Uri as a JSON backup.
-         *
-         * The JSON format:
-         * {
-         *   "version": 1,
-         *   "createdAt": <timestamp>,
-         *   "memories": [
-         *     { "id": ..., "type": "...", "timestamp": ..., "contents": "..." },
-         *     ...
-         *   ]
-         * }
-         */
-        suspend fun exportAllMemories(
-            contentResolver: ContentResolver,
-            outputUri: Uri
-        ) {
-            withContext(IO) {
 
-                val allMemories: List<MemoryEntity> =
-                    memories.getBetween(
-                        from = Long.MIN_VALUE,
-                        to = Long.MAX_VALUE
-                    )
-
-
-                val memoriesArray = JSONArray()
-                for (m in allMemories) {
-                    val obj = JSONObject().apply {
-                        put("id", m.id)
-                        put("type", m.type.name)
-                        put("timestamp", m.timestamp)
-                        put("contents", m.contents)
-                    }
-                    memoriesArray.put(obj)
-                }
-
-
-                val root = JSONObject().apply {
-                    put("version", 1)
-                    put("createdAt", System.currentTimeMillis())
-                    put("memories", memoriesArray)
-                }
-
-
-                contentResolver.openOutputStream(outputUri)?.use { out ->
-                    out.write(root.toString(2).toByteArray(Charsets.UTF_8))
-                    out.flush()
-                } ?: error("Cannot open output stream for backup uri: $outputUri")
-            }
-        }
 
     }
 
@@ -371,6 +324,208 @@ class TraverseRepository(
             }
         }
 
+    }
+    /**
+     * 导出完整备份：memories + stories + associations
+     *
+     * JSON 结构：
+     * {
+     *   "version": 2,
+     *   "createdAt": <timestamp>,
+     *   "memories": [ ... ],
+     *   "stories": [ ... ],
+     *   "associations": [ { "storyId": ..., "memoryId": ... }, ... ]
+     * }
+     */
+    suspend fun exportBackup(
+        contentResolver: ContentResolver,
+        outputUri: Uri
+    ) {
+        withContext(IO) {
+
+            val allMemories: List<MemoryEntity> =
+                memories.getBetween(Long.MIN_VALUE, Long.MAX_VALUE)
+
+
+            val allStories: List<StoryEntity> =
+                stories.watchAll().first()
+
+
+            val associationsArray = JSONArray()
+            for (story in allStories) {
+                val memsInStory: List<MemoryEntity> =
+                    stories.watchMemoriesOf(story).first()
+                for (m in memsInStory) {
+                    val assocObj = JSONObject().apply {
+                        put("storyId", story.id)
+                        put("memoryId", m.id)
+                    }
+                    associationsArray.put(assocObj)
+                }
+            }
+
+
+            val memoriesArray = JSONArray()
+            for (m in allMemories) {
+                val obj = JSONObject().apply {
+                    put("id", m.id)
+                    put("type", m.type.name)
+                    put("timestamp", m.timestamp)
+                    put("contents", m.contents)
+                }
+                memoriesArray.put(obj)
+            }
+
+
+            val storiesArray = JSONArray()
+            for (s in allStories) {
+                val obj = JSONObject().apply {
+                    put("id", s.id)
+                    put("title", s.title)
+                    put("timestamp", s.timestamp)
+
+                    // coverUri
+                    put("coverUri", s.coverUri?.toString())
+
+                    // location -> JSON
+                    if (s.location != null) {
+                        put("location", JSONObject().apply {
+                            put("lat", s.location.latitude)
+                            put("lng", s.location.longitude)
+                        })
+                    } else {
+                        put("location", JSONObject.NULL)
+                    }
+
+                    // location name
+                    put("locationName", s.locationName)
+                }
+                storiesArray.put(obj)
+            }
+
+
+            val root = JSONObject().apply {
+                put("version", 2)
+                put("createdAt", System.currentTimeMillis())
+                put("memories", memoriesArray)
+                put("stories", storiesArray)
+                put("associations", associationsArray)
+            }
+
+
+            contentResolver.openOutputStream(outputUri)?.use { out ->
+                out.write(root.toString(2).toByteArray(Charsets.UTF_8))
+                out.flush()
+            } ?: error("Cannot open output stream for backup uri: $outputUri")
+        }
+    }
+
+    /**
+     * 从备份 JSON 导入：清空当前数据，导入 memories + stories + associations。
+     * 为了兼容性，如果 JSON 里没有 stories/associations，也至少能导入 memories。
+     */
+    suspend fun importBackup(
+        contentResolver: ContentResolver,
+        inputUri: Uri
+    ) {
+        withContext(IO) {
+
+            val jsonString = contentResolver.openInputStream(inputUri)?.use {
+                it.readBytes().toString(Charsets.UTF_8)
+            } ?: error("Cannot read backup file: $inputUri")
+
+            val root = JSONObject(jsonString)
+            val memoriesArray = root.getJSONArray("memories")
+            val storiesArray = root.optJSONArray("stories") ?: JSONArray()
+            val associationsArray = root.optJSONArray("associations") ?: JSONArray()
+
+
+            val existingStories: List<StoryEntity> = stories.watchAll().first()
+            for (s in existingStories) {
+                stories.delete(s)
+            }
+
+
+            val existingMemories: List<MemoryEntity> =
+                memories.getBetween(Long.MIN_VALUE, Long.MAX_VALUE)
+            for (m in existingMemories) {
+                memories.delete(m)
+            }
+
+
+            val memoryIdMap = mutableMapOf<Long, MemoryEntity>()
+            for (i in 0 until memoriesArray.length()) {
+                val obj = memoriesArray.getJSONObject(i)
+                val oldId = obj.getLong("id")
+                val type = MemoryType.valueOf(obj.getString("type"))
+                val timestamp = obj.getLong("timestamp")
+                val contents = obj.getString("contents")
+
+
+                val inserted = memories.insert(
+                    MemoryEntity(
+                        id = 0,
+                        type = type,
+                        timestamp = timestamp,
+                        contents = contents
+                    )
+                )
+                memoryIdMap[oldId] = inserted
+            }
+
+
+            val storyIdMap = mutableMapOf<Long, StoryEntity>()
+
+            for (i in 0 until storiesArray.length()) {
+                val obj = storiesArray.getJSONObject(i)
+
+                val oldId = obj.getLong("id")
+                val title = obj.getString("title")
+                val timestamp = obj.getLong("timestamp")
+
+
+                val coverUriString = obj.optString("coverUri", null)
+                val coverUri = coverUriString?.let { Uri.parse(it) }
+
+
+                val location = if (!obj.isNull("location")) {
+                    val locObj = obj.getJSONObject("location")
+                    LatLng(locObj.getDouble("lat"), locObj.getDouble("lng"))
+                } else null
+
+                val locationName =
+                    if (obj.isNull("locationName")) null else obj.getString("locationName")
+
+
+                val inserted = stories.insert(
+                    StoryEntity(
+                        id = 0,
+                        title = title,
+                        timestamp = timestamp,
+                        coverUri = coverUri,
+                        location = location,
+                        locationName = locationName
+                    )
+                )
+
+                storyIdMap[oldId] = inserted
+            }
+
+
+            for (i in 0 until associationsArray.length()) {
+                val obj = associationsArray.getJSONObject(i)
+                val oldStoryId = obj.getLong("storyId")
+                val oldMemoryId = obj.getLong("memoryId")
+
+                val story = storyIdMap[oldStoryId]
+                val memory = memoryIdMap[oldMemoryId]
+
+                if (story != null && memory != null) {
+
+                    stories.addMemory(story, memory)
+                }
+            }
+        }
     }
 
     companion object {

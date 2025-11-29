@@ -24,6 +24,11 @@ import coolio.zoewong.traverse.ui.state.DatabaseState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.ui.platform.LocalContext
+import coolio.zoewong.traverse.ui.state.DatabaseState
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,10 +48,9 @@ fun SettingsScreen(
         contract = ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri ->
             if (uri != null) {
-                // Export memories to the given URI
                 CoroutineScope(Dispatchers.IO).launch {
                     val repo = dbState.waitForReady()
-                    repo.memories.exportAllMemories(
+                    repo.exportBackup(
                         contentResolver = context.contentResolver,
                         outputUri = uri
                     )
@@ -54,7 +58,20 @@ fun SettingsScreen(
             }
         }
     )
-
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val repo = dbState.waitForReady()
+                    repo.importBackup(
+                        contentResolver = context.contentResolver,
+                        inputUri = uri
+                    )
+                }
+            }
+        }
+    )
     Scaffold(
         topBar = {
 
@@ -145,16 +162,18 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Backup Section
             Text(
                 "Backup",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            // Export backup
             SettingsItem(
                 icon = Icons.Default.Backup,
                 title = "Export backup",
-                subtitle = "Save all memories to a JSON file",
+                subtitle = "Save memories & stories to a JSON file",
                 onClick = null,
                 trailing = {
                     TextButton(
@@ -165,6 +184,23 @@ fun SettingsScreen(
                         }
                     ) {
                         Text("Export")
+                    }
+                }
+            )
+
+            // Import backup
+            SettingsItem(
+                icon = Icons.Default.Backup,
+                title = "Import backup",
+                subtitle = "Restore memories & stories from a JSON file",
+                onClick = null,
+                trailing = {
+                    TextButton(
+                        onClick = {
+                            importLauncher.launch(arrayOf("application/json"))
+                        }
+                    ) {
+                        Text("Import")
                     }
                 }
             )
