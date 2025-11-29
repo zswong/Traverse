@@ -17,6 +17,13 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Mic
 import coolio.zoewong.traverse.ui.theme.ThemeManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Backup
+import coolio.zoewong.traverse.ui.state.DatabaseState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +37,23 @@ fun SettingsScreen(
     var language by remember { mutableStateOf("English") }
     var cameraPermission by remember { mutableStateOf(false) }
     var microphonePermission by remember { mutableStateOf(false) }
+    val dbState = DatabaseState.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+        onResult = { uri ->
+            if (uri != null) {
+                // Export memories to the given URI
+                CoroutineScope(Dispatchers.IO).launch {
+                    val repo = dbState.waitForReady()
+                    repo.memories.exportAllMemories(
+                        contentResolver = context.contentResolver,
+                        outputUri = uri
+                    )
+                }
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -121,7 +145,31 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Text(
+                "Backup",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
+            SettingsItem(
+                icon = Icons.Default.Backup,
+                title = "Export backup",
+                subtitle = "Save all memories to a JSON file",
+                onClick = null,
+                trailing = {
+                    TextButton(
+                        onClick = {
+                            exportLauncher.launch(
+                                "traverse-backup-${System.currentTimeMillis()}.json"
+                            )
+                        }
+                    ) {
+                        Text("Export")
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Privacy Section
             Text(

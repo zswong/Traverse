@@ -5,6 +5,11 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import android.content.ContentResolver
+import android.net.Uri
+import org.json.JSONArray
+import org.json.JSONObject
+
 
 /**
  * Provides high-level access to the database in a thread-safe manner.
@@ -152,6 +157,58 @@ class TraverseRepository(
             return memories.watchNewestTimestamp()
                 .flowOn(IO)
         }
+        /**
+         * Export all memories in the database to the given Uri as a JSON backup.
+         *
+         * The JSON format:
+         * {
+         *   "version": 1,
+         *   "createdAt": <timestamp>,
+         *   "memories": [
+         *     { "id": ..., "type": "...", "timestamp": ..., "contents": "..." },
+         *     ...
+         *   ]
+         * }
+         */
+        suspend fun exportAllMemories(
+            contentResolver: ContentResolver,
+            outputUri: Uri
+        ) {
+            withContext(IO) {
+
+                val allMemories: List<MemoryEntity> =
+                    memories.getBetween(
+                        from = Long.MIN_VALUE,
+                        to = Long.MAX_VALUE
+                    )
+
+
+                val memoriesArray = JSONArray()
+                for (m in allMemories) {
+                    val obj = JSONObject().apply {
+                        put("id", m.id)
+                        put("type", m.type.name)
+                        put("timestamp", m.timestamp)
+                        put("contents", m.contents)
+                    }
+                    memoriesArray.put(obj)
+                }
+
+
+                val root = JSONObject().apply {
+                    put("version", 1)
+                    put("createdAt", System.currentTimeMillis())
+                    put("memories", memoriesArray)
+                }
+
+
+                contentResolver.openOutputStream(outputUri)?.use { out ->
+                    out.write(root.toString(2).toByteArray(Charsets.UTF_8))
+                    out.flush()
+                } ?: error("Cannot open output stream for backup uri: $outputUri")
+            }
+        }
+
     }
 
     /**
