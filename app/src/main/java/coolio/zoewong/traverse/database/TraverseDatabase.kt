@@ -11,17 +11,19 @@ import androidx.room.RoomDatabase
  * When accessing the data, use TraverseRepository instead.
  */
 @Database(
-    version = 7,
+    version = 8,
     entities = [
         MemoryEntity::class,
         StoryEntity::class,
         StoryMemoryAssociation::class,
+        StoryAnalysisEntity::class,
     ]
 )
 abstract class TraverseDatabase : RoomDatabase() {
     abstract val memories: MemoryAccess
     abstract val stories: StoryAccess
     abstract val assocStoriesMemories: StoryMemoryAssociationAccess
+    abstract val storyAnalysis: StoryAnalysisAccess
 
     companion object {
 

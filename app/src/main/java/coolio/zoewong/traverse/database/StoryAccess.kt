@@ -36,7 +36,8 @@ interface StoryAccess {
     /**
      * Deletes the StoryEntity with the given ID from the database.
      *
-     * The deletion cascades and removes the StoryMemoryAssociation entities as well.
+     * The deletion cascades and removes the StoryMemoryAssociation and StoryAnalysisEntity
+     * entities as well.
      */
     @Query("DELETE FROM stories WHERE id = :id")
     suspend fun delete(id: Long)
