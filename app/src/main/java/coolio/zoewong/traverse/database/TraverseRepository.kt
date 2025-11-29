@@ -11,6 +11,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.flow.first
 import com.google.android.gms.maps.model.LatLng
+import android.util.Base64
+import kotlinx.coroutines.flow.first
+import androidx.core.net.toUri
 
 
 
@@ -372,7 +375,21 @@ class TraverseRepository(
                     put("type", m.type.name)
                     put("timestamp", m.timestamp)
                     put("contents", m.contents)
+
+                    if (m.type == MemoryType.IMAGE) {
+                        try {
+                            val uri = m.contents.toUri()
+                            contentResolver.openInputStream(uri)?.use { ins ->
+                                val bytes = ins.readBytes()
+                                val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                                put("imageDataBase64", b64)
+                            }
+                        } catch (e: Exception) {
+                            // 读不到就算了，至少还有原来的 contents URI
+                        }
+                    }
                 }
+
                 memoriesArray.put(obj)
             }
 
@@ -459,8 +476,28 @@ class TraverseRepository(
                 val oldId = obj.getLong("id")
                 val type = MemoryType.valueOf(obj.getString("type"))
                 val timestamp = obj.getLong("timestamp")
-                val contents = obj.getString("contents")
 
+                var contents = obj.getString("contents")
+
+
+                if (type == MemoryType.IMAGE && obj.has("imageDataBase64")) {
+                    try {
+                        val bytes = Base64.decode(obj.getString("imageDataBase64"), Base64.DEFAULT)
+
+
+                        val oldUri = Uri.parse(contents)
+                        val ext = oldUri.lastPathSegment
+                            ?.substringAfterLast('.', "")
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "jpg"
+
+
+                        val newUri = media.saveImageBytes(bytes, ext)
+                        contents = newUri.toString()
+                    } catch (e: Exception) {
+
+                    }
+                }
 
                 val inserted = memories.insert(
                     MemoryEntity(

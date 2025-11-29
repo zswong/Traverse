@@ -52,6 +52,21 @@ class TraverseMedia private constructor(private val dir: Path) {
         val (saved, type) = storeMedia(context, source, imagesDir)
         return Uri.fromFile(saved.toFile())
     }
+    /**
+     * Saves raw image bytes into the images directory with a random file name,
+     * and returns a file:// Uri pointing to it.
+     */
+    suspend fun saveImageBytes(bytes: ByteArray, extension: String = "jpg"): Uri {
+        return withContext(Dispatchers.IO) {
+            val randomName = UUID.randomUUID().toString()
+            val fileName = if (extension.isBlank()) randomName else "$randomName.$extension"
+            val dest = imagesDir.resolve(fileName)
+            Files.newOutputStream(dest).use { out ->
+                out.write(bytes)
+            }
+            Uri.fromFile(dest.toFile())
+        }
+    }
 
     /**
      * Downloads or copies a media file to the target directory, storing it with a random name.

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.ui.platform.LocalContext
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import kotlinx.coroutines.launch
+import android.net.Uri
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +44,8 @@ fun SettingsScreen(
     var cameraPermission by remember { mutableStateOf(false) }
     var microphonePermission by remember { mutableStateOf(false) }
     val dbState = DatabaseState.current
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+    var showImportConfirm by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -69,6 +72,7 @@ fun SettingsScreen(
                         inputUri = uri
                     )
                 }
+                showImportConfirm = true
             }
         }
     )
@@ -181,9 +185,11 @@ fun SettingsScreen(
                             exportLauncher.launch(
                                 "traverse-backup-${System.currentTimeMillis()}.json"
                             )
-                        }
+                        },
+                        modifier = Modifier.width(110.dp)
                     ) {
-                        Text("Export")
+                        Text("Export",maxLines = 1)
+
                     }
                 }
             )
@@ -198,9 +204,11 @@ fun SettingsScreen(
                     TextButton(
                         onClick = {
                             importLauncher.launch(arrayOf("application/json"))
-                        }
+                        },
+                        modifier = Modifier.width(110.dp)
                     ) {
-                        Text("Import")
+                        Text("Import",maxLines = 1)
+
                     }
                 }
             )
@@ -237,6 +245,54 @@ fun SettingsScreen(
 
         }
     }
+    if (showImportConfirm) {
+        AlertDialog(
+            onDismissRequest = {
+                showImportConfirm = false
+                pendingImportUri = null
+            },
+            title = { Text("Import backup?") },
+            text = {
+                Text(
+                    "This will erase all current memories and stories, " +
+                            "then replace them with the data from the backup file. " +
+                            "This action cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val uri = pendingImportUri
+                        showImportConfirm = false
+                        pendingImportUri = null
+
+                        if (uri != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val repo = dbState.waitForReady()
+                                repo.importBackup(
+                                    contentResolver = context.contentResolver,
+                                    inputUri = uri
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    Text("Import")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImportConfirm = false
+                        pendingImportUri = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 @Composable
