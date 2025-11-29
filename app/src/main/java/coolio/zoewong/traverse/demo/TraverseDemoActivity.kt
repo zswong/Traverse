@@ -2,7 +2,6 @@
 
 package coolio.zoewong.traverse.demo
 
-import android.database.sqlite.SQLiteConstraintException
 import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Bundle
@@ -43,12 +42,10 @@ import coolio.zoewong.traverse.ui.provider.getMemoriesManager
 import coolio.zoewong.traverse.ui.provider.getStories
 import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.AppState
+import coolio.zoewong.traverse.ui.state.getStoryAnalysisService
 import coolio.zoewong.traverse.ui.theme.ThemeManager
 import coolio.zoewong.traverse.ui.theme.TraverseTheme
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.asCompletableFuture
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -104,7 +101,7 @@ class TraverseDemoActivity : ComponentActivity() {
                     )
                 }
 
-                AppState {
+                AppState(activity = this) {
                     AppShell(
                         nav = nav,
                         currentTitle = currentTitle,
@@ -123,6 +120,7 @@ class TraverseDemoActivity : ComponentActivity() {
 
                                 val memoriesManager = getMemoriesManager()
                                 val storiesManager = getStoriesManager()
+                                val storyAnalysisService = getStoryAnalysisService()
 
                                 JournalScreen(
                                     memories = getMemories(),

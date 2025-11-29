@@ -16,8 +16,10 @@ import androidx.compose.runtime.setValue
 import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisServiceManager
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.DatabaseStateAccessor
+import coolio.zoewong.traverse.ui.state.getStoryAnalysisService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -30,13 +32,15 @@ fun StoryListProvider(
     children: @Composable () -> Unit,
 ) {
     val database = DatabaseState.current
+    val analysisService = getStoryAnalysisService()
 
     var stories by remember {
         mutableStateOf(emptyList<Story>())
     }
 
-    val manager = remember { StoryListManager(database) }
+    val manager = remember { StoryListManager(database, analysisService) }
     manager.databaseState = database // Update if DatabaseState changes
+    manager.analysisService = analysisService
 
     // Load stories in the background.
     LaunchedEffect(Unit) {
@@ -63,7 +67,10 @@ fun StoryListProvider(
     }
 }
 
-class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
+class StoryListManager(
+    internal var databaseState: DatabaseStateAccessor,
+    internal var analysisService: StoryAnalysisServiceManager
+) {
     fun fromCallback(block: suspend StoryListManager.(db: TraverseRepository) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             val db = databaseState.waitForReady()
@@ -87,6 +94,7 @@ class StoryListManager(internal var databaseState: DatabaseStateAccessor) {
         databaseState.waitForReady().apply {
             try {
                 stories.addMemory(story, memory)
+                analysisService.queueForAnalysis(story)
             } catch (e: SQLiteConstraintException) {
                 Log.i("addMemoryToStory", "Memory ${memory.id} already in story ${story.id}")
             }
