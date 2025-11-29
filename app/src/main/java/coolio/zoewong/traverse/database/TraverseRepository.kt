@@ -32,6 +32,7 @@ class TraverseRepository(
     val stories = StoriesRepo(
         database.stories,
         database.assocStoriesMemories,
+        database.storyAnalysis,
     )
 
     /**
@@ -159,6 +160,7 @@ class TraverseRepository(
     class StoriesRepo(
         private val stories: StoryAccess,
         private val assocWithMemories: StoryMemoryAssociationAccess,
+        private val storyAnalysis: StoryAnalysisAccess,
     ) {
 
         /**
@@ -177,6 +179,14 @@ class TraverseRepository(
         suspend fun insert(story: StoryEntity): StoryEntity {
             return withContext(IO) {
                 val id = stories.insert(story)
+                storyAnalysis.insert(StoryAnalysisEntity(
+                    storyId = id,
+                    lastAnalyzedMemoryId = null,
+                    latestMemoryId = null,
+                    summary = null,
+                    modelSummary = "",
+                ))
+
                 story.copy(id = id)
             }
         }
@@ -242,6 +252,8 @@ class TraverseRepository(
                         memoryId = memory.id,
                     )
                 )
+
+                storyAnalysis.updateToIncludeMemories(story.id, listOf(memory.id))
             }
         }
 
@@ -259,6 +271,49 @@ class TraverseRepository(
                 )
             }
         }
+
+        /**
+         * Returns the StoryAnalysisEntity for a story.
+         *
+         * If the story doesn't exist or the StoryAnalysisEntity doesn't exist, returns null.
+         */
+        suspend fun getAnalysis(story: StoryEntity): StoryAnalysisEntity? {
+            return withContext(IO) {
+                storyAnalysis.get(story.id)
+            }
+        }
+
+        /**
+         * Returns a flow emitting the StoryAnalysisEntity for the given story.
+         */
+        suspend fun watchAnalysis(story: StoryEntity): Flow<StoryAnalysisEntity?> {
+            return watchAnalysis(story.id)
+        }
+
+        /**
+         * Returns a flow emitting the StoryAnalysisEntity for the story with the given ID.
+         */
+        suspend fun watchAnalysis(storyId: Long): Flow<StoryAnalysisEntity?> {
+            return storyAnalysis.watch(storyId)
+                .flowOn(IO)
+        }
+
+        /**
+         * Updates the StoryAnalysisEntity for a story.
+         */
+        suspend fun updateAnalysis(story: StoryEntity, analysis: StoryAnalysisEntity) {
+            return updateAnalysis(story.id, analysis)
+        }
+
+        /**
+         * Updates the StoryAnalysisEntity for the story with the given ID.
+         */
+        suspend fun updateAnalysis(storyId: Long, analysis: StoryAnalysisEntity) {
+            return withContext(IO) {
+                storyAnalysis.update(analysis)
+            }
+        }
+
     }
 
     companion object {
