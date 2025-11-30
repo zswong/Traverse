@@ -15,6 +15,7 @@ roomKtx = "2.7.0"
 navigationRuntimeKtx = "2.9.5"
 documentfile = "1.1.0"
 playServicesMaps = "19.2.0"
+mediapipeGenai = "0.10.29"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -44,6 +45,7 @@ androidx-documentfile = { group = "androidx.documentfile", name = "documentfile"
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version = "0.37.3" }
 accompanist-drawablepainter = { group = "com.google.accompanist", name = "accompanist-drawablepainter", version = "0.37.3" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipeGenai" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
