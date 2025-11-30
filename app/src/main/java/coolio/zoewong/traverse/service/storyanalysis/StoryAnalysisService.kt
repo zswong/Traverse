@@ -11,6 +11,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import coolio.zoewong.traverse.R
+import coolio.zoewong.traverse.ai.InferenceModel
+import coolio.zoewong.traverse.ai.ModelExtractor
 import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.notifications.NextNotificationId
 import coolio.zoewong.traverse.notifications.NotificationChannels
@@ -22,7 +24,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 
@@ -40,6 +41,7 @@ class StoryAnalysisService : Service() {
     private lateinit var notification: Notification
 
     private lateinit var queue: StoryAnalysisServiceQueue
+    private lateinit var inferenceModel: InferenceModel
     private val waitForQueueSetup = MutableWaitFor<Unit>()
 
 
@@ -51,7 +53,14 @@ class StoryAnalysisService : Service() {
         val db = TraverseRepository.getInstance(this)
 
         Log.d(LOG_TAG, "Loading model")
-        // TODO: Load model
+        try {
+            inferenceModel = InferenceModel(this, ModelExtractor.Models.GEMMA_1B)
+            inferenceModel.initialize()
+        } catch (e: Exception) {
+            Log.e(LOG_TAG, "Failed to initialize model", e)
+            stopSelf()
+            return
+        }
 
         waitForQueueSetup()
         serviceMainLoop(db)
@@ -78,6 +87,7 @@ class StoryAnalysisService : Service() {
             Log.d(LOG_TAG, "Launching background job to analyze story")
             val waitForStoryId = MutableWaitFor<Long>()
             val processingJob = CoroutineScope(Dispatchers.Default).launch {
+                delay(1000) // Debounce
                 analyzeStory(db, waitForStoryId())
             }
 
@@ -110,23 +120,23 @@ class StoryAnalysisService : Service() {
     ) {
         val story = db.stories.get(storyId) ?: return
         val analysis = db.stories.getAnalysis(story) ?: return
+        val memories = db.stories.getMemoriesOf(story)
 
         if (analysis.lastAnalyzedMemoryId == analysis.latestMemoryId) {
             Log.i(LOG_TAG, "Story #${story.id} already analyzed: memory=${analysis.latestMemoryId}, analyzed=${analysis.lastAnalyzedMemoryId}")
             return
         }
 
-        Log.i(LOG_TAG, "Analyzing story: $story")
-
+        Log.i(LOG_TAG, "Analyzing story: $story $analysis")
         updateNotification {
             setContentText(story.title)
         }
 
-        // TODO: Analyze story
-        delay(20000)
-        db.stories.updateAnalysis(story, analysis.copy(
-            lastAnalyzedMemoryId = analysis.latestMemoryId,
-        ))
+        // Analyze the story in chunks.
+        val analyzer = StoryAnalyzer(inferenceModel, analysis, memories)
+        val updatedAnalysis = analyzer.run()
+
+        db.stories.updateAnalysis(story, updatedAnalysis)
         Log.d(LOG_TAG, "Done analyzing.")
     }
 
@@ -241,6 +251,5 @@ class StoryAnalysisService : Service() {
 
     companion object {
         private const val LOG_TAG = "StoryAnalysisService"
-
     }
 }

@@ -3,6 +3,8 @@ package coolio.zoewong.traverse.ui.demo
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -18,7 +20,10 @@ import coolio.zoewong.traverse.model.*
 import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,6 +38,7 @@ fun StoryDetailScreen(
     // 从 Room 里读出的 segment 列表
     val storiesManager = getStoriesManager()
     val (memories, loaded) = storiesManager.loadMemoriesOf(story)
+    val (summary, _) = storiesManager.getSummaryOf(story)
 
     Scaffold(
         topBar = {
@@ -62,6 +68,28 @@ fun StoryDetailScreen(
                 thickness = DividerDefaults.Thickness,
                 color = DividerDefaults.color
             )
+
+            if (summary != "") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    thickness = DividerDefaults.Thickness,
+                    color = DividerDefaults.color
+                )
+            }
 
             when {
                 !loaded -> {

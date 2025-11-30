@@ -110,12 +110,37 @@ class StoryListManager(
         }
     }
 
+    suspend fun reanalyzeStory(story: Story) {
+        withContext(Dispatchers.IO) {
+            databaseState.waitForReady().apply {
+                stories.clearAnalysis(story)
+                analysisService.queueForAnalysis(story)
+            }
+        }
+    }
+
+    @Composable
+    fun getSummaryOf(story: Story): Pair<String, Boolean> {
+        var loaded by remember { mutableStateOf(false) }
+        var summary by remember { mutableStateOf("") }
+
+        LaunchedEffect(story) {
+            val db = databaseState.waitForReady()
+            db.stories.watchAnalysis(story).collect {
+                summary = it?.summary ?: ""
+                loaded = true
+            }
+        }
+
+        return summary to loaded
+    }
+
     @Composable
     fun loadMemoriesOf(story: Story): Pair<List<Memory>, Boolean> {
         var loaded by remember { mutableStateOf(false) }
-        var memories by remember { mutableStateOf(emptyList<Memory>())}
+        var memories by remember { mutableStateOf(emptyList<Memory>()) }
 
-        LaunchedEffect( story) {
+        LaunchedEffect(story) {
             val db = databaseState.waitForReady()
             db.stories.watchMemoriesOf(story).collect {
                 memories = it
