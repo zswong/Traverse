@@ -249,6 +249,14 @@ class TraverseRepository(
         }
 
         /**
+         * Returns a flow emitting a list of all MemoryEntity instances that
+         * are part of the specified story.
+         */
+        suspend fun getMemoriesOf(story: StoryEntity): List<MemoryEntity> {
+            return watchMemoriesOf(story).first()
+        }
+
+        /**
          * Associates a MemoryEntity with a StoryEntity, "adding" the
          * memory to the story.
          *
@@ -327,7 +335,15 @@ class TraverseRepository(
             }
         }
 
+        /**
+         * Clears the analysis of a story.
+         */
+        suspend fun clearAnalysis(story: StoryEntity) {
+            return storyAnalysis.clearAnalysisData(story.id)
+        }
+
     }
+
     /**
      * 导出完整备份：memories + stories + associations
      *

@@ -11,8 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,7 +47,9 @@ import coolio.zoewong.traverse.ui.state.AppState
 import coolio.zoewong.traverse.ui.state.getStoryAnalysisService
 import coolio.zoewong.traverse.ui.theme.ThemeManager
 import coolio.zoewong.traverse.ui.theme.TraverseTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -217,6 +221,7 @@ class TraverseDemoActivity : ComponentActivity() {
                             ) { backStack ->
                                 val id = backStack.arguments!!.getLong("id")
 
+                                val storiesManager = getStoriesManager()
                                 val story = getStories().find { it.id == id }
                                 if (story == null) {
                                     Log.e("StoryDetailScreen", "Story with id $id not found")
@@ -241,6 +246,16 @@ class TraverseDemoActivity : ComponentActivity() {
                                         Icon(
                                             imageVector = Icons.Filled.LocationOn,
                                             contentDescription = "Location"
+                                        )
+                                    }
+                                    IconButton(onClick = {
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            storiesManager.reanalyzeStory(story)
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Update,
+                                            contentDescription = "Re-analyze Story"
                                         )
                                     }
                                     IconButton(onClick = { /* TODO: Menu action */ }) {

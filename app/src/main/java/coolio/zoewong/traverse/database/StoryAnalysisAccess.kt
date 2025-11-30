@@ -45,6 +45,16 @@ interface StoryAnalysisAccess {
     suspend fun delete(id: Long)
 
     /**
+     * Clears the data of the StoryAnalysisEntity for the given story.
+     */
+    @Query("UPDATE story_analysis SET " +
+            "last_analyzed_memory_id = NULL, " +
+            "summary = NULL, " +
+            "model_summary = '' " +
+            "WHERE story_id = :id")
+    fun clearAnalysisData(id: Long)
+
+    /**
      * Updates the StoryAnalysis to consider new memories being added to the story.
      */
     @Transaction
