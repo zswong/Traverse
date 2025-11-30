@@ -167,7 +167,7 @@ class StoryAnalysisService : Service() {
         } catch (e: SecurityException) {
             Log.e(LOG_TAG, "Failed to promote Service to foreground", e)
             stopSelf()
-            return 0
+            return START_NOT_STICKY
         }
 
         serviceMainJob = CoroutineScope(Dispatchers.IO).launch {
@@ -175,7 +175,7 @@ class StoryAnalysisService : Service() {
             serviceMain()
         }
 
-        return 0
+        return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -211,7 +211,11 @@ class StoryAnalysisService : Service() {
                 .updateFun()
                 .build()
 
-            notificationManager.notify(notificationId, notification)
+            try {
+                notificationManager.notify(notificationId, notification)
+            } catch (e: SecurityException) {
+                Log.e(LOG_TAG, "Failed to update notification", e)
+            }
         }
     }
 
