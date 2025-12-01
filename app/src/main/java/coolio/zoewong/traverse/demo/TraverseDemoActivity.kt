@@ -16,6 +16,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Update
@@ -64,6 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
+import coolio.zoewong.traverse.ui.state.getSettings
 
 class TraverseDemoActivity : ComponentActivity() {
 
@@ -369,15 +372,17 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 contentDescription = "Set story location"
                                             )
                                         }
-                                        IconButton(onClick = {
-                                            CoroutineScope(Dispatchers.IO).launch {
-                                                storiesManager.reanalyzeStory(story)
+                                        if (getSettings().enableStoryAnalysis) {
+                                            IconButton(onClick = {
+                                                CoroutineScope(Dispatchers.IO).launch {
+                                                    storiesManager.reanalyzeStory(story)
+                                                }
+                                            }) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.InterpreterMode,
+                                                    contentDescription = "Re-analyze Story"
+                                                )
                                             }
-                                        }) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Update,
-                                                contentDescription = "Re-analyze Story"
-                                            )
                                         }
                                         IconButton(onClick = { /* TODO: Menu action */ }) {
                                             Icon(
