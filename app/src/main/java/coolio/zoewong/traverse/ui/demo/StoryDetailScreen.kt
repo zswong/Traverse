@@ -20,6 +20,7 @@ import coolio.zoewong.traverse.model.*
 import coolio.zoewong.traverse.ui.provider.getStoriesManager
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
+import coolio.zoewong.traverse.ui.state.getSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -39,6 +40,7 @@ fun StoryDetailScreen(
     val storiesManager = getStoriesManager()
     val (memories, loaded) = storiesManager.loadMemoriesOf(story)
     val (summary, _) = storiesManager.getSummaryOf(story)
+    val settings = getSettings()
 
     Scaffold(
         topBar = {
@@ -69,7 +71,7 @@ fun StoryDetailScreen(
                 color = DividerDefaults.color
             )
 
-            if (summary != "") {
+            if (settings.enableStoryAnalysis && summary != "") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
