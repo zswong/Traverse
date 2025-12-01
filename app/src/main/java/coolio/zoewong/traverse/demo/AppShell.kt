@@ -21,6 +21,7 @@ import coolio.zoewong.traverse.ui.state.LoadStatus
 import coolio.zoewong.traverse.ui.state.shouldSplashScreenBeVisible
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
+import coolio.zoewong.traverse.ui.theme.ThemeManager
 
 
 enum class DrawerDest(val route: String, val label: String) {
@@ -44,6 +45,12 @@ fun AppShell(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    val isDarkMode = ThemeManager.isDarkMode
+
+    val sidebarColor = if (isDarkMode) Color(0xFF10091D) else Color(0xFF0066FF)
+    val textColor = if (isDarkMode) Color(0xFFE3F2FD) else Color.White
+    val selectedColor = if (isDarkMode) Color(0xFF28193D) else Color(0xFF91BEFF)
+
     AnimatedVisibility(
         visible = shouldSplashScreenBeVisible(),
         exit = fadeOut(),
@@ -56,21 +63,21 @@ fun AppShell(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = Color(0xFF0066FF),  // Sidebar background
-                drawerContentColor = Color.White           // Default text color
+                drawerContainerColor = sidebarColor,  
+                drawerContentColor = textColor,         
             ) {
                 Text(
                     "Traverse",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(16.dp),
-                    color = Color.White
+                    color = textColor
                 )
 
                 NavigationDrawerItem(
                     label = {
                         Text(
                             DrawerDest.Journal.label,
-                            color = Color.White
+                            color = textColor
                         )
                     },
                     selected = currentTitle == "Journal",
@@ -79,7 +86,7 @@ fun AppShell(
                         nav.navigate(DrawerDest.Journal.route) { launchSingleTop = true }
                     },
                     colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color(0xFF91BEFF),  
+                        selectedContainerColor = selectedColor,
                         unselectedContainerColor = Color.Transparent
                     )
                 )
@@ -97,7 +104,7 @@ fun AppShell(
                         nav.navigate(DrawerDest.MyStories.route) { launchSingleTop = true }
                     },
                     colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color(0xFF91BEFF),
+                        selectedContainerColor = selectedColor,
                         unselectedContainerColor = Color.Transparent
                     )
                 )
@@ -115,7 +122,7 @@ fun AppShell(
                         nav.navigate(DrawerDest.Map.route) { launchSingleTop = true }
                     },
                     colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color(0xFF91BEFF),
+                        selectedContainerColor = selectedColor,
                         unselectedContainerColor = Color.Transparent
                     )
                 )
@@ -133,7 +140,7 @@ fun AppShell(
                         nav.navigate(DrawerDest.Settings.route) { launchSingleTop = true }
                     },
                     colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Color(0xFF91BEFF),
+                        selectedContainerColor = selectedColor,
                         unselectedContainerColor = Color.Transparent
                     )
                 )
@@ -182,3 +189,4 @@ fun AppShell(
         }
     }
 }
+
