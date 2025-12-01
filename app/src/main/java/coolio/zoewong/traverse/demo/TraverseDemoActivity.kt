@@ -64,15 +64,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
-<<<<<<< HEAD
-=======
-import coolio.zoewong.traverse.database.StoryEntity
-import coolio.zoewong.traverse.ui.state.DatabaseState
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
-import coolio.zoewong.traverse.ui.screen.splash.LoadingSplashScreen
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
 
 class TraverseDemoActivity : ComponentActivity() {
 
@@ -86,7 +77,6 @@ class TraverseDemoActivity : ComponentActivity() {
             "%.${decimals}f".format(this)
 
         setContent {
-<<<<<<< HEAD
             TraverseTheme {
                 SplashScreenStateProvider {
 
@@ -101,34 +91,6 @@ class TraverseDemoActivity : ComponentActivity() {
                             mutableStateOf<(@Composable RowScope.() -> Unit)?>(null)
                         }
 
-=======
-            var showSplash by remember { mutableStateOf(true) }
-
-            LaunchedEffect(Unit) {
-                delay(2000L)
-                showSplash = false
-            }
-
-            if (showSplash) {
-                LoadingSplashScreen()
-            } else {
-                TraverseTheme {
-                    val nav = rememberNavController()
-                    var currentTitle by remember { mutableStateOf("Journal") }
-                    var currentSubtitle by remember { mutableStateOf<String?>(null) }
-                    var customNavigationIcon by remember {
-                        mutableStateOf<(@Composable () -> Unit)?>(
-                            null
-                        )
-                    }
-                    var customActions by remember {
-                        mutableStateOf<(@Composable RowScope.() -> Unit)?>(
-                            null
-                        )
-                    }
-    
-                    AppState(activity = this) {
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                         AppShell(
                             nav = nav,
                             currentTitle = currentTitle,
@@ -137,22 +99,16 @@ class TraverseDemoActivity : ComponentActivity() {
                             actions = customActions
                         ) {
                             val context = LocalContext.current
-<<<<<<< HEAD
 
                             NavHost(
                                 navController = nav,
                                 startDestination = "journal"
                             ) {
-=======
-                            NavHost(navController = nav, startDestination = "journal") {
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                 composable("journal") {
                                     currentTitle = "Journal"
                                     currentSubtitle = null
                                     customNavigationIcon = null
                                     customActions = null
-<<<<<<< HEAD
 
                                     val memoriesManager = getMemoriesManager()
                                     val storiesManager = getStoriesManager()
@@ -398,205 +354,6 @@ class TraverseDemoActivity : ComponentActivity() {
                                             Locale.getDefault()
                                         ).format(Date(story.timestamp))
 
-=======
-    
-                                    val memoriesManager = getMemoriesManager()
-                                    val storiesManager = getStoriesManager()
-                                    val storyAnalysisService = getStoryAnalysisService()
-    
-                                    JournalScreen(
-                                        memories = getMemories(),
-                                        stories = getStories(),
-                                        onSend = { text, uri -> memoriesManager.fromCallback { db ->
-                                            val uri = uri?.let {
-                                                db.media.saveImage(context, it)
-                                            }
-                                            val (type, contents) = when {
-                                                text != null -> MemoryType.TEXT to text
-                                                uri != null -> MemoryType.IMAGE to uri.toString()
-                                                else -> throw IllegalArgumentException("No message or image?")
-                                            }
-                                            createMemory(
-                                                Memory(
-                                                    id = AUTOMATICALLY_GENERATED_ID,
-                                                    timestamp = Calendar.getInstance().time.time,
-                                                    contents = contents,
-                                                    type = type,
-                                                )
-                                            )
-                                        }},
-                                        onAddToStory = { memory, story -> storiesManager.fromCallback {
-                                            addMemoryToStory(story, memory)
-                                        }},
-                                    )
-                                }
-    
-    
-                                composable("list") {
-                                    currentTitle = "My Stories"
-                                    currentSubtitle = null
-                                    customNavigationIcon = null
-                                    customActions = null
-    
-                                    StoryListScreen(
-                                        stories = getStories(),
-                                        onOpen = { id -> nav.navigate("detail/$id") },
-                                        onCreate = { nav.navigate("create") }
-                                    )
-                                }
-                                composable("map") {
-                                    currentTitle = "Map"
-                                    currentSubtitle = null
-                                    customNavigationIcon = null
-                                    customActions = null
-    
-                                    val stories = getStories()
-    
-                                    MapScreen(
-                                        stories = stories,
-                                        onOpenStory = { id ->
-                                            nav.navigate("detail/$id")
-                                        }
-                                    )
-                                }
-    
-    
-                                composable("create") {
-                                    currentTitle = "Create Story"
-                                    currentSubtitle = null
-                                    customNavigationIcon = null
-                                    customActions = null
-    
-                                    val context = LocalContext.current
-                                    val dbState = DatabaseState.current
-    
-                                    CreateStoryScreen(
-                                        onCancel = { nav.popBackStack() },
-                                        onCreate = { title, locationName, cover, latLng ->
-                                            CoroutineScope(Dispatchers.IO).launch {
-                                                val repo = dbState.waitForReady()
-    
-                                                val savedCoverUri = cover?.let {
-                                                    repo.media.saveImage(context, it)
-                                                }
-    
-                                                val storyEntity = StoryEntity(
-                                                    id = 0L,
-                                                    title = title,
-                                                    timestamp = System.currentTimeMillis(),
-                                                    coverUri = savedCoverUri,
-                                                    location = latLng,
-                                                    locationName = locationName
-                                                )
-    
-                                                val inserted = repo.stories.insert(storyEntity)
-    
-                                                withContext(Dispatchers.Main) {
-                                                    nav.navigate("detail/${inserted.id}") {
-                                                        popUpTo("list") { inclusive = false }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    )
-                                }
-    
-    
-    
-                                composable("settings") {
-                                    currentTitle = "Settings"
-                                    currentSubtitle = null
-                                    customNavigationIcon = null
-                                    customActions = null
-                                    SettingsScreen(
-                                        onBack = { nav.popBackStack() }
-                                    )
-                                }
-    
-                                composable(
-                                    route = "detail/{id}",
-                                    arguments = listOf(navArgument("id") { type = NavType.LongType })
-                                ) { backStack ->
-                                    val id = backStack.arguments!!.getLong("id")
-    
-                                    val storiesManager = getStoriesManager()
-                                    val story = getStories().find { it.id == id }
-                                    if (story == null) {
-                                        Log.e("StoryDetailScreen", "Story with id $id not found")
-                                        Surface { Text("Story not found...") }
-                                        return@composable
-                                    }
-                                    val context = LocalContext.current
-                                    val dbState = DatabaseState.current
-                                    val fusedLocationClient = remember {
-                                        LocationServices.getFusedLocationProviderClient(context)
-                                    }
-                                    val scope = rememberCoroutineScope()
-    
-                                    fun persistStoryLocation(latLng: LatLng) {
-                                        scope.launch(Dispatchers.IO) {
-                                            val repo = dbState.waitForReady()
-                                            val entity = repo.stories.get(story.id) ?: return@launch
-    
-                                            val updated = entity.copy(
-                                                location = latLng,
-                                                locationName = entity.locationName
-                                                    ?: "(${latLng.latitude.format(4)}, ${latLng.longitude.format(4)})"
-                                            )
-                                            repo.stories.update(updated)
-                                        }
-                                    }
-    
-                                    val locationPermissionLauncher = rememberLauncherForActivityResult(
-                                        contract = ActivityResultContracts.RequestPermission()
-                                    ) { granted ->
-                                        if (granted) {
-                                            fusedLocationClient.lastLocation
-                                                .addOnSuccessListener { loc ->
-                                                    if (loc != null) {
-                                                        persistStoryLocation(LatLng(loc.latitude, loc.longitude))
-                                                        Toast.makeText(context, "Story location updated", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        Toast.makeText(context, "No location available", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
-                                                }
-                                        } else {
-                                            Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-    
-                                    fun updateStoryLocationWithCurrent() {
-                                        val hasPermission = ContextCompat.checkSelfPermission(
-                                            context,
-                                            Manifest.permission.ACCESS_FINE_LOCATION
-                                        ) == PackageManager.PERMISSION_GRANTED
-    
-                                        if (hasPermission) {
-                                            fusedLocationClient.lastLocation
-                                                .addOnSuccessListener { loc ->
-                                                    if (loc != null) {
-                                                        persistStoryLocation(LatLng(loc.latitude, loc.longitude))
-                                                        Toast.makeText(context, "Story location updated", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        Toast.makeText(context, "No location available", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
-                                                }
-                                        } else {
-                                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                        }
-                                    }
-    
-                                    currentTitle = story.title
-                                    currentSubtitle =
-                                        SimpleDateFormat("MMMM d'th', yyyy", Locale.getDefault())
-                                            .format(Date(story.timestamp))
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                     customNavigationIcon = {
                                         IconButton(onClick = { nav.popBackStack() }) {
                                             Icon(
@@ -629,66 +386,39 @@ class TraverseDemoActivity : ComponentActivity() {
                                             )
                                         }
                                     }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                     StoryDetailScreen(
                                         story = story,
                                         onBack = { nav.popBackStack() },
                                         onAddToStory = { nav.navigate("add/$id") }
                                     )
                                 }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                 composable(
                                     route = "add/{id}",
                                     arguments = listOf(navArgument("id") { type = NavType.LongType })
                                 ) { backStack ->
                                     val id = backStack.arguments!!.getLong("id")
-<<<<<<< HEAD
 
                                     val storiesManager = getStoriesManager()
                                     val memoriesManager = getMemoriesManager()
 
-=======
-    
-                                    val storiesManager = getStoriesManager()
-                                    val memoriesManager = getMemoriesManager()
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                     val story = getStories().find { it.id == id }
                                     if (story == null) {
                                         Log.e("StoryDetailScreen", "Story with id $id not found")
                                         Surface { Text("Story not found...") }
                                         return@composable
                                     }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                     SegmentEditorScreen(
                                         onCancel = { nav.popBackStack() },
                                         onSubmit = { text, uri: Uri? ->
                                             memoriesManager.fromCallback { db ->
-<<<<<<< HEAD
                                                 val savedUri = uri?.let {
                                                     db.media.saveImage(context, it)
                                                 }
                                                 val (type, contents) = when {
                                                     savedUri != null -> MemoryType.IMAGE to savedUri.toString()
-=======
-                                                val uri = uri?.let {
-                                                    db.media.saveImage(context, it)
-                                                }
-                                                val (type, contents) = when {
-                                                    uri != null -> MemoryType.IMAGE to uri.toString()
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                                     text != null -> MemoryType.TEXT to text
                                                     else -> throw IllegalArgumentException("No message or image?")
                                                 }
@@ -698,19 +428,11 @@ class TraverseDemoActivity : ComponentActivity() {
                                                     type = type,
                                                     contents = contents,
                                                 )
-<<<<<<< HEAD
 
                                                 val createdMemory = createMemory(memory)
                                                 storiesManager.addMemoryToStory(story, createdMemory)
                                             }
 
-=======
-    
-                                                val createdMemory = createMemory(memory)
-                                                storiesManager.addMemoryToStory(story, createdMemory)
-                                            }
-    
->>>>>>> 159feb0fd382e8d7eebcc0f0e871013d8bea7dbc
                                             nav.popBackStack()
                                         }
                                     )
