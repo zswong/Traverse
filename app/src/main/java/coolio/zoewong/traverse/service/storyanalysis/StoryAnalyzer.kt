@@ -90,8 +90,20 @@ class StoryAnalyzer(
             inferenceModel.truncatePromptToFit(condenserPrompt)
         )
 
+        // Clean up the condensed summary.
+        val cleanedSummary = condensedSummary
+            .let({
+                it.lineSequence()
+                    .map { line -> line.trim().trimStart('*').trimEnd('*') }
+                    .joinToString("\n")
+            })
+            .replace(MATCH_BULLETS_REGEX, " ")
+            .replace(MATCH_LINE_ENDINGS_REGEX, " ")
+            .replace(MATCH_CONSECUTIVE_WHITESPACE_REGEX, " ")
+            .trim()
+
         return lastAnalysis.copy(
-            summary = condensedSummary,
+            summary = cleanedSummary,
             modelSummary = summary,
             lastAnalyzedMemoryId = memories.last().id,
         )
@@ -172,6 +184,10 @@ class StoryAnalyzer(
 
     companion object {
         private const val LOG_TAG = "StoryAnalyzer"
+
+        private val MATCH_LINE_ENDINGS_REGEX = Regex("[\r\n]+")
+        private val MATCH_BULLETS_REGEX = Regex("^ *[\\-*] +", RegexOption.MULTILINE)
+        private val MATCH_CONSECUTIVE_WHITESPACE_REGEX = Regex(" {2,}")
 
         private const val DEFAULT_PROMPT = "" +
                 "You are a helpful assistant that accurately summarizes my journals." +
