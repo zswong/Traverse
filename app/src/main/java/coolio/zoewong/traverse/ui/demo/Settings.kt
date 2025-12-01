@@ -145,7 +145,7 @@ fun SettingsScreen(
             val storyAnalysisSupported = isStoryAnalysisSupported()
             SettingsItem(
                 icon = Icons.Default.InterpreterMode,
-                title = "Story Summaries",
+                title = "Story Summaries (Beta)",
                 subtitle = when (storyAnalysisSupported) {
                     true -> "Use on-device AI to summarize stories."
                     false -> "Not supported on this device."
