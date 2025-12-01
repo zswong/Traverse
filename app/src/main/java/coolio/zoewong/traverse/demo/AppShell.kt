@@ -20,6 +20,7 @@ import coolio.zoewong.traverse.ui.state.DatabaseState
 import coolio.zoewong.traverse.ui.state.LoadStatus
 import coolio.zoewong.traverse.ui.state.shouldSplashScreenBeVisible
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
 
 
 enum class DrawerDest(val route: String, val label: String) {
@@ -54,27 +55,87 @@ fun AppShell(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Text("Traverse", style = MaterialTheme.typography.titleLarge, modifier = androidx.compose.ui.Modifier.padding(16.dp))
+            ModalDrawerSheet(
+                drawerContainerColor = Color(0xFF0066FF),  // Sidebar background
+                drawerContentColor = Color.White           // Default text color
+            ) {
+                Text(
+                    "Traverse",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(16.dp),
+                    color = Color.White
+                )
+
                 NavigationDrawerItem(
-                    label = { Text(DrawerDest.Journal.label) },
+                    label = {
+                        Text(
+                            DrawerDest.Journal.label,
+                            color = Color.White
+                        )
+                    },
                     selected = currentTitle == "Journal",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.Journal.route) { launchSingleTop = true } }
+                    onClick = {
+                        scope.launch { drawerState.close() };
+                        nav.navigate(DrawerDest.Journal.route) { launchSingleTop = true }
+                    },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF91BEFF),  
+                        unselectedContainerColor = Color.Transparent
+                    )
                 )
+
                 NavigationDrawerItem(
-                    label = { Text(DrawerDest.MyStories.label) },
+                    label = {
+                        Text(
+                            DrawerDest.MyStories.label,
+                            color = Color.White
+                        )
+                    },
                     selected = currentTitle == "My Stories",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.MyStories.route) { launchSingleTop = true } }
+                    onClick = {
+                        scope.launch { drawerState.close() };
+                        nav.navigate(DrawerDest.MyStories.route) { launchSingleTop = true }
+                    },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF91BEFF),
+                        unselectedContainerColor = Color.Transparent
+                    )
                 )
+
                 NavigationDrawerItem(
-                    label = { Text(DrawerDest.Map.label) },
+                    label = {
+                        Text(
+                            DrawerDest.Map.label,
+                            color = Color.White
+                        )
+                    },
                     selected = currentTitle == "Map",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.Map.route) { launchSingleTop = true } }
+                    onClick = {
+                        scope.launch { drawerState.close() };
+                        nav.navigate(DrawerDest.Map.route) { launchSingleTop = true }
+                    },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF91BEFF),
+                        unselectedContainerColor = Color.Transparent
+                    )
                 )
+
                 NavigationDrawerItem(
-                    label = { Text(DrawerDest.Settings.label) },
+                    label = {
+                        Text(
+                            DrawerDest.Settings.label,
+                            color = Color.White
+                        )
+                    },
                     selected = currentTitle == "Settings",
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate(DrawerDest.Settings.route) { launchSingleTop = true } }
+                    onClick = {
+                        scope.launch { drawerState.close() };
+                        nav.navigate(DrawerDest.Settings.route) { launchSingleTop = true }
+                    },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF91BEFF),
+                        unselectedContainerColor = Color.Transparent
+                    )
                 )
             }
         }
