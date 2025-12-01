@@ -66,7 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
-import coolio.zoewong.traverse.ui.state.getSettings
+import coolio.zoewong.traverse.ui.demo.StoryDetailScreenMenu
 
 class TraverseDemoActivity : ComponentActivity() {
 
@@ -372,24 +372,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 contentDescription = "Set story location"
                                             )
                                         }
-                                        if (getSettings().enableStoryAnalysis) {
-                                            IconButton(onClick = {
-                                                CoroutineScope(Dispatchers.IO).launch {
-                                                    storiesManager.reanalyzeStory(story)
-                                                }
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.InterpreterMode,
-                                                    contentDescription = "Re-analyze Story"
-                                                )
-                                            }
-                                        }
-                                        IconButton(onClick = { /* TODO: Menu action */ }) {
-                                            Icon(
-                                                imageVector = Icons.Filled.MoreVert,
-                                                contentDescription = "More options"
-                                            )
-                                        }
+                                        StoryDetailScreenMenu(story)
                                     }
 
                                     StoryDetailScreen(
