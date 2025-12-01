@@ -25,7 +25,8 @@
         <activity
             android:name="coolio.zoewong.traverse.demo.TraverseDemoActivity"
             android:exported="true"
-            android:label="Traverse Demo">
+            android:label="Traverse Demo"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
