@@ -30,31 +30,52 @@ import androidx.compose.ui.platform.LocalContext
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import kotlinx.coroutines.launch
 import android.net.Uri
-import androidx.compose.material.icons.filled.InterpreterMode
-import androidx.compose.material.icons.filled.ModelTraining
-import androidx.compose.material.icons.filled.Subtitles
-import coolio.zoewong.traverse.ui.state.getSettings
-import coolio.zoewong.traverse.ui.state.getSettingsManager
-import coolio.zoewong.traverse.ui.state.isStoryAnalysisSupported
-
-
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import android.content.Context
+import androidx.compose.ui.text.style.TextAlign
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit
 ) {
-    val settings = getSettings()
-    val settingsManager = getSettingsManager()
     val context = LocalContext.current
     val isDarkMode = ThemeManager.isDarkMode
 
-    var notifications by remember { mutableStateOf(true) }
-    var language by remember { mutableStateOf("English") }
-    var cameraPermission by remember { mutableStateOf(false) }
-    var microphonePermission by remember { mutableStateOf(false) }
+    val hasCameraPermission = remember {
+        derivedStateOf {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    val hasMicrophonePermission = remember {
+        derivedStateOf {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+    }
+
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+    }
+
     val dbState = DatabaseState.current
     var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
     var showImportConfirm by remember { mutableStateOf(false) }
+    var showPrivacyText by remember { mutableStateOf(false) }
+    var showTermsText by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -119,93 +140,11 @@ fun SettingsScreen(
                 }
             )
 
-            // Notifications
-            SettingsItem(
-                icon = Icons.Default.Notifications,
-                title = "Notifications",
-                subtitle = "Enable or disable push notifications",
-                trailing = {
-                    Switch(
-                        checked = notifications,
-                        onCheckedChange = { notifications = it }
-                    )
-                }
-            )
 
-            // Language
-            SettingsItem(
-                icon = Icons.Default.Language,
-                title = "Language",
-                subtitle = language,
-                onClick = {
-                    // TODO: actual language switching if time permits
-                }
-            )
 
-            // Story Analysis Section
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "Story Analysis (Beta)",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            // Story Analysis
-            val storyAnalysisSupported = isStoryAnalysisSupported()
-            SettingsItem(
-                icon = Icons.Default.InterpreterMode,
-                title = "Summarize Stories",
-                subtitle = when (storyAnalysisSupported) {
-                    true -> "Use on-device AI to summarize stories."
-                    false -> "Not supported on this device."
-                },
-                enabled = storyAnalysisSupported,
-                onClick = {
-                    settingsManager.changeSettings(
-                        settings.copy(enableStoryAnalysis = !settings.enableStoryAnalysis)
-                    )
-                },
-                trailing = {
-                    Switch(
-                        checked = settings.enableStoryAnalysis,
-                        enabled = isStoryAnalysisSupported(),
-                        onCheckedChange = {
-                            settingsManager.changeSettings(
-                                settings.copy(enableStoryAnalysis = it)
-                            )
-                        }
-                    )
-                }
-            )
-
-            SettingsItem(
-                icon = Icons.Default.Subtitles,
-                title = "Show Summary",
-                subtitle = when (settings.enableStoryAnalysis) {
-                    true -> "Show the story summary by default."
-                    false -> "Story summaries must be enabled."
-                },
-                enabled = settings.enableStoryAnalysis,
-                onClick = {
-                    settingsManager.changeSettings(
-                        settings.copy(showStorySummaryByDefault = !settings.showStorySummaryByDefault)
-                    )
-                },
-                trailing = {
-                    Switch(
-                        checked = settings.showStorySummaryByDefault,
-                        enabled = settings.enableStoryAnalysis,
-                        onCheckedChange = {
-                            settingsManager.changeSettings(
-                                settings.copy(showStorySummaryByDefault = it)
-                            )
-                        }
-                    )
-                }
-            )
 
             // Permissions Section
-            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 "Permissions",
                 style = MaterialTheme.typography.titleLarge,
@@ -216,10 +155,13 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.CameraAlt,
                 title = "Camera Access",
-                subtitle = if (cameraPermission) "Allowed" else "Not allowed",
+                subtitle = if (hasCameraPermission.value) "Allowed" else "Not allowed - tap to request",
                 onClick = {
-                    // TODO: Request camera permission or open app settings?
-                    cameraPermission = !cameraPermission
+                    if (hasCameraPermission.value) {
+                        // Already granted
+                    } else {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
                 }
             )
 
@@ -227,12 +169,16 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Mic,
                 title = "Microphone Access",
-                subtitle = if (microphonePermission) "Allowed" else "Not allowed",
+                subtitle = if (hasMicrophonePermission.value) "Allowed" else "Not allowed - tap to request",
                 onClick = {
-                    // TODO: Request microphone permission or open app settings?
-                    microphonePermission = !microphonePermission
+                    if (hasMicrophonePermission.value) {
+                        // Already granted
+                    } else {
+                        microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
                 }
             )
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -247,7 +193,7 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Backup,
                 title = "Export backup",
-                subtitle = "Save memories & stories to a JSON file",
+                subtitle = "Save memories to JSON file        ",
                 onClick = null,
                 trailing = {
                     TextButton(
@@ -256,7 +202,6 @@ fun SettingsScreen(
                                 "traverse-backup-${System.currentTimeMillis()}.json"
                             )
                         },
-                        modifier = Modifier.width(110.dp)
                     ) {
                         Text("Export",maxLines = 1)
 
@@ -268,14 +213,13 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Backup,
                 title = "Import backup",
-                subtitle = "Restore memories & stories from a JSON file",
+                subtitle = "Restore memories from JSON file",
                 onClick = null,
                 trailing = {
                     TextButton(
                         onClick = {
                             importLauncher.launch(arrayOf("application/json"))
                         },
-                        modifier = Modifier.width(110.dp)
                     ) {
                         Text("Import",maxLines = 1)
 
@@ -297,9 +241,7 @@ fun SettingsScreen(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy Policy",
                 subtitle = "View our privacy policy",
-                onClick = {
-                    // TODO: Open privacy policy
-                }
+                onClick = { showPrivacyText = true }
             )
 
             // Terms of Service
@@ -307,13 +249,54 @@ fun SettingsScreen(
                 icon = Icons.Default.PrivacyTip,
                 title = "Terms of Service",
                 subtitle = "View terms and conditions",
-                onClick = {
-                    // TODO: Open terms of service
-                }
+                onClick = { showTermsText = true }
             )
 
 
         }
+    }
+    if (showPrivacyText) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyText = false },
+            title = { Text("Privacy Policy") },
+            text = {
+                Column {
+                    Text("We respect your privacy.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("• We don't share your data")
+                    Text("• You control your information")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showPrivacyText = false }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showTermsText) {
+        AlertDialog(
+            onDismissRequest = { showTermsText = false },
+            title = { Text("Terms of Service") },
+            text = {
+                Column {
+                    Text("By using this app, you agree to:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("• Use the app responsibly")
+                    Text("• Not misuse the service")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showTermsText = false }
+                ) {
+                    Text("Agree")
+                }
+            }
+        )
     }
     if (showImportConfirm) {
         AlertDialog(
@@ -365,25 +348,37 @@ fun SettingsScreen(
 
 }
 
+// Helper function to check if you can use camera
+fun canUseCamera(context: Context): Boolean {
+    return ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
+// Helper function to check if you can use microphone
+fun canUseMicrophone(context: Context): Boolean {
+    return ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.RECORD_AUDIO
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
 @Composable
 fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
-    enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     Card(
-        onClick = { if (enabled) onClick?.invoke() },
+        onClick = { onClick?.invoke() },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        enabled = enabled,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceDim,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
