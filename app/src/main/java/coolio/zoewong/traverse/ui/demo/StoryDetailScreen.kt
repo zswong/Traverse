@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.InterpreterMode
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -147,6 +149,40 @@ fun StoryDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun StoryDetailScreenMenu(
+    story: Story
+) {
+    val storiesManager = getStoriesManager()
+    var expanded by remember { mutableStateOf(false) }
+
+    IconButton(onClick = { expanded = !expanded }) {
+        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+    }
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        if (getSettings().enableStoryAnalysis) {
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.InterpreterMode,
+                        contentDescription = "AI Icon"
+                    )
+                },
+                text = { Text("Re-analyze Story") },
+                onClick = {
+                    expanded = false
+                    CoroutineScope(Dispatchers.IO).launch {
+                        storiesManager.reanalyzeStory(story)
+                    }
+                }
+            )
         }
     }
 }
