@@ -18,7 +18,7 @@ data class Settings(
          */
         fun fromSharedPreferences(prefs: SharedPreferences): Settings {
             return Settings(
-                enableStoryAnalysis = prefs.getBoolean(KEY_ENABLE_STORY_ANALYSIS, true)
+                enableStoryAnalysis = prefs.getBoolean(KEY_ENABLE_STORY_ANALYSIS, false)
             )
         }
 
