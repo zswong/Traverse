@@ -267,6 +267,7 @@ class TraverseRepository(
          */
         suspend fun addMemory(story: StoryEntity, memory: MemoryEntity) {
             return withContext(IO) {
+
                 assocWithMemories.insert(
                     StoryMemoryAssociation(
                         storyId = story.id,
@@ -274,9 +275,22 @@ class TraverseRepository(
                     )
                 )
 
+
                 storyAnalysis.updateToIncludeMemories(story.id, listOf(memory.id))
+
+
+                if (story.coverUri == null && memory.type == MemoryType.IMAGE) {
+                    val newCoverUri = Uri.parse(memory.contents)
+
+                    val updatedStory = story.copy(
+                        coverUri = newCoverUri
+                    )
+
+                    stories.update(updatedStory)
+                }
             }
         }
+
 
         /**
          * Removes an association between a MemoryEntity and StoryEntity, "removing" the

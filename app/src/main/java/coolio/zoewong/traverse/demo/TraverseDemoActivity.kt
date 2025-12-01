@@ -55,6 +55,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
+import coolio.zoewong.traverse.database.StoryEntity
+import coolio.zoewong.traverse.ui.state.DatabaseState
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TraverseDemoActivity : ComponentActivity() {
 
@@ -179,23 +183,32 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
-                                val storiesManager = getStoriesManager()
+
+                                val context = LocalContext.current
+                                val dbState = DatabaseState.current
+
                                 CreateStoryScreen(
                                     onCancel = { nav.popBackStack() },
-                                    onCreate = { title, location ->
-                                        val newStory = Story(
-                                            id = AUTOMATICALLY_GENERATED_ID,
-                                            title = title,
-                                            timestamp = System.currentTimeMillis(),
-                                            locationName = location,
-                                            coverUri = null,
-                                            location = null,
-                                        )
+                                    onCreate = { title, locationName, cover ->
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            val repo = dbState.waitForReady()
 
-                                        storiesManager.fromCallback {
-                                            val createdStory = createStory(newStory)
+                                            val savedCoverUri = cover?.let {
+                                                repo.media.saveImage(context, it)
+                                            }
+
+                                            val storyEntity = StoryEntity(
+                                                title = title,
+                                                timestamp = System.currentTimeMillis(),
+                                                coverUri = savedCoverUri,
+                                                location = null,
+                                                locationName = locationName
+                                            )
+
+                                            val inserted = repo.stories.insert(storyEntity)
+
                                             withContext(Dispatchers.Main) {
-                                                nav.navigate("detail/${createdStory.id}") {
+                                                nav.navigate("detail/${inserted.id}") {
                                                     popUpTo("list") { inclusive = false }
                                                 }
                                             }
@@ -203,6 +216,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                     }
                                 )
                             }
+
 
 
                             composable("settings") {

@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package coolio.zoewong.traverse.ui.demo
+import androidx.compose.foundation.lazy.rememberLazyListState
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -184,18 +185,32 @@ fun JournalScreen(
             }
         }
     }
+    val sortedMemories = remember(memories) {
+        memories.sortedBy { it.timestampMillis }
+    }
+
+
+    val listState = rememberLazyListState()
+
+
+    LaunchedEffect(sortedMemories.size) {
+        if (sortedMemories.isNotEmpty()) {
+           listState.animateScrollToItem(sortedMemories.lastIndex)
+        }
+    }
 
 
 
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(memories, key = { it.id }) { m ->
+            items(sortedMemories, key = { it.id }) { m ->
                 val interactionSource = remember { MutableInteractionSource() }
                 val isSelected = m.id in selectedIds
 
@@ -217,7 +232,7 @@ fun JournalScreen(
                                         if (isSelected) selectedIds - m.id
                                         else selectedIds + m.id
                                 } else {
-
+                                    // 非多选模式下点一下现在是 no-op，可以以后做 detail 等
                                 }
                             },
                             onLongClick = {

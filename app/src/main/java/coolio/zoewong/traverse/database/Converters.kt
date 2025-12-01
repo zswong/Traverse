@@ -9,15 +9,19 @@ import java.io.DataOutputStream
 
 class Converters {
 
+    // ---------- LatLng <-> ByteArray ----------
+
     @TypeConverter
-    fun bytesToLatLng(value: ByteArray): LatLng {
+    fun bytesToLatLng(value: ByteArray?): LatLng? {
+        if (value == null) return null
         return DataInputStream(value.inputStream()).use {
             readSerializedLatLng(it)
         }
     }
 
     @TypeConverter
-    fun latLngToBytes(value: LatLng): ByteArray {
+    fun latLngToBytes(value: LatLng?): ByteArray? {
+        if (value == null) return null
         val out = ByteArrayOutputStream()
         DataOutputStream(out).use {
             writeSerializedLatLng(it, value)
@@ -25,27 +29,29 @@ class Converters {
         return out.toByteArray()
     }
 
+    // ---------- Uri <-> String ----------
+
     @TypeConverter
-    fun uriToString(value: Uri): String {
-        return value.toString()
+    fun uriToString(value: Uri?): String? {
+        return value?.toString()
     }
 
     @TypeConverter
-    fun stringToUri(value: String): Uri {
-        return Uri.parse(value)
+    fun stringToUri(value: String?): Uri? {
+        return value?.let { Uri.parse(it) }
     }
 
     /**
      * Reads the next byte-serialized LatLng from a DataInputStream.
-     * Byte format: [long, long]
+     * Byte format: [double, double]
      */
     private fun readSerializedLatLng(input: DataInputStream): LatLng {
         return LatLng(input.readDouble(), input.readDouble())
     }
 
     /**
-     * Reads a byte-serialized LatLng to a DataOutputStream.
-     * Byte format: [long, long]
+     * Writes a byte-serialized LatLng to a DataOutputStream.
+     * Byte format: [double, double]
      */
     private fun writeSerializedLatLng(output: DataOutputStream, latLng: LatLng) {
         output.writeDouble(latLng.latitude)
