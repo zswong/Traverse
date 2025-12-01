@@ -12,7 +12,7 @@ import kotlin.io.path.absolutePathString
 class InferenceModel(
     private val context: Context,
     val model: String = "gemma-3n-E1B-it-int4.task",
-    val maxTokens: Int = 1000,
+    val maxTokens: Int = 4000,
 ) : Model<String, String> {
     private val extractor = ModelExtractor(context)
     private lateinit var inference: LlmInference
