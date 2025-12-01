@@ -1,18 +1,29 @@
 package coolio.zoewong.traverse.ui.state
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import coolio.zoewong.traverse.Settings
 import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisServiceManager
 import coolio.zoewong.traverse.ui.provider.MemoryListProvider
 import coolio.zoewong.traverse.ui.provider.StoryListProvider
 import coolio.zoewong.traverse.ui.provider.throwWhenNotInHierarchy
-import coolio.zoewong.traverse.util.MutableWaitFor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.getValue
 
 /**
@@ -27,19 +38,27 @@ fun AppState(
         activity.viewModels<PersistentAppStateViewModel>()
     }
 
-    // Ensure the StoryAnalysisService is started.
-    persistentState.storyAnalysisService.start(activity)
+    SettingsStateProvider(activity) {
+        val settings = getSettings()
 
-    // Provide access to state.
-    CompositionLocalProvider(localPersistentAppState provides persistentState) {
-        SplashScreenStateProvider {
-            DatabaseStateProvider(onReady = splashScreenWaitsForThis("database ready")) {
+        // Ensure the StoryAnalysisService is started/stopped based on settings.
+        if (settings.enableStoryAnalysis) {
+            persistentState.storyAnalysisService.start(activity)
+        } else {
+            persistentState.storyAnalysisService.shutdown()
+        }
 
-                // Always keep the list of memories and stories loaded.
-                // Keep the splash screen visible until they're ready.
-                MemoryListProvider(onReady = splashScreenWaitsForThis("memories loaded")) {
-                    StoryListProvider(onReady = splashScreenWaitsForThis("stories loaded")) {
-                        children()
+        // Provide access to state.
+        CompositionLocalProvider(localPersistentAppState provides persistentState) {
+            SplashScreenStateProvider {
+                DatabaseStateProvider(onReady = splashScreenWaitsForThis("database ready")) {
+
+                    // Always keep the list of memories and stories loaded.
+                    // Keep the splash screen visible until they're ready.
+                    MemoryListProvider(onReady = splashScreenWaitsForThis("memories loaded")) {
+                        StoryListProvider(onReady = splashScreenWaitsForThis("stories loaded")) {
+                            children()
+                        }
                     }
                 }
             }

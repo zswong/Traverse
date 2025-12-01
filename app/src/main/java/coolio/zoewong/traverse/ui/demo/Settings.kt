@@ -30,6 +30,10 @@ import androidx.compose.ui.platform.LocalContext
 import coolio.zoewong.traverse.ui.state.DatabaseState
 import kotlinx.coroutines.launch
 import android.net.Uri
+import androidx.compose.material.icons.filled.InterpreterMode
+import androidx.compose.material.icons.filled.ModelTraining
+import coolio.zoewong.traverse.ui.state.getSettings
+import coolio.zoewong.traverse.ui.state.getSettingsManager
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,8 +41,11 @@ import android.net.Uri
 fun SettingsScreen(
     onBack: () -> Unit
 ) {
+    val settings = getSettings()
+    val settingsManager = getSettingsManager()
     val context = LocalContext.current
     val isDarkMode = ThemeManager.isDarkMode
+
     var notifications by remember { mutableStateOf(true) }
     var language by remember { mutableStateOf("English") }
     var cameraPermission by remember { mutableStateOf(false) }
@@ -133,9 +140,30 @@ fun SettingsScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // Story Analysis
+            SettingsItem(
+                icon = Icons.Default.InterpreterMode,
+                title = "Story Summaries",
+                subtitle = "Use on-device AI to summarize stories.",
+                onClick = {
+                    settingsManager.changeSettings(
+                        settings.copy(enableStoryAnalysis = !settings.enableStoryAnalysis)
+                    )
+                },
+                trailing = {
+                    Switch(
+                        checked = settings.enableStoryAnalysis,
+                        onCheckedChange = {
+                            settingsManager.changeSettings(
+                                settings.copy(enableStoryAnalysis = it)
+                            )
+                        }
+                    )
+                }
+            )
 
             // Permissions Section
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 "Permissions",
                 style = MaterialTheme.typography.titleLarge,
