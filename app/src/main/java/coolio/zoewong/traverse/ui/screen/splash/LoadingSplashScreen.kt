@@ -35,7 +35,7 @@ fun LoadingSplashScreen(
     Box(
         modifier = modifier
             .blockAllPointerInputs()
-            .background(Color(0xFF2196F3)) // Blue color
+            .background(Color(0xFF2D69FF)) // Blue color
             .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
