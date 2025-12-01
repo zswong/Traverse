@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import android.net.Uri
 import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.ModelTraining
+import androidx.compose.material.icons.filled.Subtitles
 import coolio.zoewong.traverse.ui.state.getSettings
 import coolio.zoewong.traverse.ui.state.getSettingsManager
 import coolio.zoewong.traverse.ui.state.isStoryAnalysisSupported
@@ -141,11 +142,19 @@ fun SettingsScreen(
                 }
             )
 
+            // Story Analysis Section
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "Story Analysis (Beta)",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
             // Story Analysis
             val storyAnalysisSupported = isStoryAnalysisSupported()
             SettingsItem(
                 icon = Icons.Default.InterpreterMode,
-                title = "Story Summaries (Beta)",
+                title = "Summarize Stories",
                 subtitle = when (storyAnalysisSupported) {
                     true -> "Use on-device AI to summarize stories."
                     false -> "Not supported on this device."
@@ -163,6 +172,32 @@ fun SettingsScreen(
                         onCheckedChange = {
                             settingsManager.changeSettings(
                                 settings.copy(enableStoryAnalysis = it)
+                            )
+                        }
+                    )
+                }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Subtitles,
+                title = "Show Summary",
+                subtitle = when (settings.enableStoryAnalysis) {
+                    true -> "Show the story summary by default."
+                    false -> "Story summaries must be enabled."
+                },
+                enabled = settings.enableStoryAnalysis,
+                onClick = {
+                    settingsManager.changeSettings(
+                        settings.copy(showStorySummaryByDefault = !settings.showStorySummaryByDefault)
+                    )
+                },
+                trailing = {
+                    Switch(
+                        checked = settings.showStorySummaryByDefault,
+                        enabled = settings.enableStoryAnalysis,
+                        onCheckedChange = {
+                            settingsManager.changeSettings(
+                                settings.copy(showStorySummaryByDefault = it)
                             )
                         }
                     )

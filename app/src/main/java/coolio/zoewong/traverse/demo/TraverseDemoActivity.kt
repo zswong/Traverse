@@ -67,6 +67,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 import coolio.zoewong.traverse.ui.demo.StoryDetailScreenMenu
+import coolio.zoewong.traverse.ui.state.getSettings
 
 class TraverseDemoActivity : ComponentActivity() {
 
@@ -233,7 +234,10 @@ class TraverseDemoActivity : ComponentActivity() {
                                     arguments = listOf(navArgument("id") { type = NavType.LongType })
                                 ) { backStack ->
                                     val id = backStack.arguments!!.getLong("id")
-                                    val summaryVisible = remember(id) { mutableStateOf(false) }
+                                    val settings = getSettings()
+                                    val summaryVisible = remember(id) {
+                                        mutableStateOf(settings.showStorySummaryByDefault)
+                                    }
 
                                     val storiesManager = getStoriesManager()
                                     val story = getStories().find { it.id == id }
