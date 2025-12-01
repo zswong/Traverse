@@ -372,7 +372,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 contentDescription = "Set story location"
                                             )
                                         }
-                                        StoryDetailScreenMenu(story)
+                                        StoryDetailScreenMenu(story, nav)
                                     }
 
                                     StoryDetailScreen(

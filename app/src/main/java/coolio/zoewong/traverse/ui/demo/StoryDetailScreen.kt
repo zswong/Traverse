@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
@@ -27,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -155,9 +158,11 @@ fun StoryDetailScreen(
 
 @Composable
 fun StoryDetailScreenMenu(
-    story: Story
+    story: Story,
+    navController: NavController,
 ) {
     val storiesManager = getStoriesManager()
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
     IconButton(onClick = { expanded = !expanded }) {
@@ -183,8 +188,80 @@ fun StoryDetailScreenMenu(
                     }
                 }
             )
+
+            HorizontalDivider()
         }
+
+        DropdownMenuItem(
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Delete Icon"
+                )
+            },
+            text = { Text("Delete Story") },
+            onClick = {
+                expanded = false
+                showDeleteDialog = true
+            }
+        )
     }
+
+    if (showDeleteDialog) {
+        StoryDetailScreenDeleteDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            onConfirmation = {
+                CoroutineScope(Dispatchers.IO).launch {
+                    storiesManager.deleteStory(story)
+                    withContext(Dispatchers.Main) {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun StoryDetailScreenDeleteDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+) {
+    AlertDialog(
+        icon = {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete Icon",
+            )
+        },
+        title = {
+            Text(text = "Delete Story?")
+        },
+        text = {
+            Text(text = "Your memories will remain, but the story will be deleted. This action is irreversible!")
+        },
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirmation()
+                }
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                }
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

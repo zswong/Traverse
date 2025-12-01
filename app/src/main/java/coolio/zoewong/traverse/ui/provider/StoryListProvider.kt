@@ -88,6 +88,15 @@ class StoryListManager(
     }
 
     /**
+     * Deletes the given story from the database.
+     */
+    suspend fun deleteStory(story: Story) {
+        databaseState.waitForReady().apply {
+            stories.delete(story)
+        }
+    }
+
+    /**
      * Adds the given memory to the given story.
      */
     suspend fun addMemoryToStory(story: Story, memory: Memory) {
