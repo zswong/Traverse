@@ -68,6 +68,7 @@ fun DatabaseStateProvider(
     val tag = "DatabaseStateProvider"
     val context = LocalContext.current
     val waitForReady = remember { MutableWaitFor<TraverseRepository>() }
+    val completeSplashWait = splashScreenWaitsForThis("database")
     val (state, setState) = remember {
         mutableStateOf(
             DatabaseStateAccessor(
@@ -82,7 +83,10 @@ fun DatabaseStateProvider(
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             Log.i(tag, "Loading database...")
-            val database = TraverseRepository.getInstance(context)
+            val database = withContext(Dispatchers.IO) {
+                TraverseRepository.getInstance(context)
+            }
+
             setState(
                 DatabaseStateAccessor(
                     status = LoadStatus.LOADED,
@@ -92,6 +96,7 @@ fun DatabaseStateProvider(
             )
             Log.i(tag, "Database loaded.")
             waitForReady.done(database)
+            completeSplashWait()
             onReady?.invoke()
         }
     }

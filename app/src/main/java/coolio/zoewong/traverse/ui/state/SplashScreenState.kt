@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import coolio.zoewong.traverse.util.MutableWaitFor
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Provides access to memories that can be displayed in the journal page.
  */
+
 @Composable
 fun SplashScreenStateProvider(
     children: @Composable () -> Unit,
@@ -36,30 +38,39 @@ fun SplashScreenStateProvider(
     }
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            waitForFirstComposition()
-            while (!waitingFor.isEmpty()) {
-                val pair = waitingFor.first()
-                waitingFor.remove(pair)
 
-                val (name, wait) = pair
-                Log.i(tag, "Waiting for ${name}...")
-                wait()
-                Log.i(tag, "Done waiting for ${name}.")
-            }
+        waitForFirstComposition()
 
-            Log.i(tag, "Splash screen is no longer needed.")
-            ready = true
+        val startTime = System.currentTimeMillis()
+
+        while (!waitingFor.isEmpty()) {
+            val pair = waitingFor.first()
+            waitingFor.remove(pair)
+
+            val (name, wait) = pair
+            Log.i(tag, "Waiting for $name...")
+            wait()
+            Log.i(tag, "Done waiting for $name.")
         }
+
+
+        val elapsed = System.currentTimeMillis() - startTime
+        val minVisible = 1500L
+        if (elapsed < minVisible) {
+            kotlinx.coroutines.delay(minVisible - elapsed)
+        }
+
+        Log.i(tag, "Splash screen is no longer needed.")
+        ready = true
     }
 
-    // Provide access to children.
     CompositionLocalProvider(SplashScreenVisible provides !ready) {
         CompositionLocalProvider(SplashScreenWaitingFor provides waitingFor) {
             children()
         }
     }
 }
+
 
 @Composable
 fun shouldSplashScreenBeVisible(): Boolean {
