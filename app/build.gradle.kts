@@ -84,6 +84,8 @@ dependencies {
 
     // Tried Switching to ML Kit for guaranteed on-device processing but doesn't work
     //implementation("com.google.android.gms:play-services-mlkit-speech:17.0.1")
+    implementation(libs.play.services.maps.v1820)
+    implementation("com.google.maps.android:maps-compose:4.3.0")
 
 
 

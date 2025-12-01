@@ -1,7 +1,17 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package coolio.zoewong.traverse.demo
-
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
+import coolio.zoewong.traverse.ui.state.DatabaseState
+import kotlinx.coroutines.launch
 import android.icu.util.Calendar
 import android.net.Uri
 import android.os.Bundle
@@ -68,30 +78,8 @@ class TraverseDemoActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ThemeManager.loadTheme(this)
 
-//        if (stories.isEmpty()) {
-//            fun seed(title: String, location: String?): Story {
-//                val s = Story(idGen.getAndIncrement(), title, System.currentTimeMillis(), location)
-//                // Relational database can't have rows from tables nested inside other tables' rows.
-////                s.memories += Memory(
-////                    idGen.getAndDecrement(),
-////                    timestampMillis = System.currentTimeMillis(),
-////                    type = Memory.Type.TEXT,
-////                    text = "Walked from Pacific Center... French Toast!!!"
-////                )
-////                s.memories += Memory(
-////                    idGen.getAndIncrement(),
-////                    timestampMillis = System.currentTimeMillis(),
-////                    type = Memory.Type.TEXT,
-////                    text = "Later... doughnuts. Delicious!"
-////                )
-//                return s
-//            }
-//            stories += seed("Sad Day! Mish Mish Gone", null)
-//            stories += seed("Passed Driving Test!", null)
-//            stories += seed("Stanley Park Vancouver", "Vancouver")
-//            stories += seed("Stanley Park Vancouver", "Vancouver")
-//            stories += seed("Stanley Park Vancouver", "Vancouver")
-//        }
+        fun Double.format(decimals: Int): String =
+            "%.${decimals}f".format(this)
 
         setContent {
             TraverseTheme {
@@ -175,8 +163,17 @@ class TraverseDemoActivity : ComponentActivity() {
                                 currentSubtitle = null
                                 customNavigationIcon = null
                                 customActions = null
-                                MapScreen()
+
+                                val stories = getStories()
+
+                                MapScreen(
+                                    stories = stories,
+                                    onOpenStory = { id ->
+                                        nav.navigate("detail/$id")
+                                    }
+                                )
                             }
+
 
                             composable("create") {
                                 currentTitle = "Create Story"
@@ -189,7 +186,7 @@ class TraverseDemoActivity : ComponentActivity() {
 
                                 CreateStoryScreen(
                                     onCancel = { nav.popBackStack() },
-                                    onCreate = { title, locationName, cover ->
+                                    onCreate = { title, locationName, cover, latLng ->
                                         CoroutineScope(Dispatchers.IO).launch {
                                             val repo = dbState.waitForReady()
 
@@ -198,10 +195,11 @@ class TraverseDemoActivity : ComponentActivity() {
                                             }
 
                                             val storyEntity = StoryEntity(
+                                                id = 0L,
                                                 title = title,
                                                 timestamp = System.currentTimeMillis(),
                                                 coverUri = savedCoverUri,
-                                                location = null,
+                                                location = latLng,
                                                 locationName = locationName
                                             )
 
@@ -242,6 +240,71 @@ class TraverseDemoActivity : ComponentActivity() {
                                     Surface { Text("Story not found...") }
                                     return@composable
                                 }
+                                val context = LocalContext.current
+                                val dbState = DatabaseState.current
+                                val fusedLocationClient = remember {
+                                    LocationServices.getFusedLocationProviderClient(context)
+                                }
+                                val scope = rememberCoroutineScope()
+
+                                fun persistStoryLocation(latLng: LatLng) {
+                                    scope.launch(Dispatchers.IO) {
+                                        val repo = dbState.waitForReady()
+                                        val entity = repo.stories.get(story.id) ?: return@launch
+
+                                        val updated = entity.copy(
+                                            location = latLng,
+                                            locationName = entity.locationName
+                                                ?: "(${latLng.latitude.format(4)}, ${latLng.longitude.format(4)})"
+                                        )
+                                        repo.stories.update(updated)
+                                    }
+                                }
+
+                                val locationPermissionLauncher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.RequestPermission()
+                                ) { granted ->
+                                    if (granted) {
+                                        fusedLocationClient.lastLocation
+                                            .addOnSuccessListener { loc ->
+                                                if (loc != null) {
+                                                    persistStoryLocation(LatLng(loc.latitude, loc.longitude))
+                                                    Toast.makeText(context, "Story location updated", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "No location available", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+                                            }
+                                    } else {
+                                        Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+
+                                fun updateStoryLocationWithCurrent() {
+                                    val hasPermission = ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == PackageManager.PERMISSION_GRANTED
+
+                                    if (hasPermission) {
+                                        fusedLocationClient.lastLocation
+                                            .addOnSuccessListener { loc ->
+                                                if (loc != null) {
+                                                    persistStoryLocation(LatLng(loc.latitude, loc.longitude))
+                                                    Toast.makeText(context, "Story location updated", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "No location available", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+                                            }
+                                    } else {
+                                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                    }
+                                }
 
                                 currentTitle = story.title
                                 currentSubtitle =
@@ -256,10 +319,10 @@ class TraverseDemoActivity : ComponentActivity() {
                                     }
                                 }
                                 customActions = {
-                                    IconButton(onClick = { /* TODO: Location action */ }) {
+                                    IconButton(onClick = { updateStoryLocationWithCurrent() }) {
                                         Icon(
                                             imageVector = Icons.Filled.LocationOn,
-                                            contentDescription = "Location"
+                                            contentDescription = "Set story location"
                                         )
                                     }
                                     IconButton(onClick = {
