@@ -50,12 +50,18 @@ class StoryAnalyzer(
         }
 
         // Add remaining memories to the prompt.
+        var memoriesProcessed = 0
         for (i in start until memories.size) {
             if (!currentCoroutineContext().isActive) {
                 throw CancellationException()
             }
 
             val memory = memories[i]
+            if (!canAnalyzeMemoryType(memory)) {
+                continue
+            }
+
+            memoriesProcessed++
             val addedChunk = addMemoryToPrompt(memory)
             if (addedChunk) {
                 continue
@@ -68,6 +74,13 @@ class StoryAnalyzer(
 
         if (memoriesInPrompt > 0) {
             analyzeChunk()
+        }
+
+        // If nothing was processed, return the last analysis.
+        if (memoriesProcessed == 0) {
+            return lastAnalysis.copy(
+                lastAnalyzedMemoryId = memories.last().id,
+            )
         }
 
         // Condense the summary.
@@ -105,6 +118,13 @@ class StoryAnalyzer(
                     "Pretend it's a previous journal entry, and weigh it with more importance than the upcoming ones. " +
                     "The Summary:\n${summary}"
         }
+    }
+
+    /**
+     * Returns true if the memory can be analyzed, false otherwise.
+     */
+    private fun canAnalyzeMemoryType(memory: MemoryEntity): Boolean {
+        return memory.type == MemoryType.TEXT
     }
 
     /**
