@@ -28,10 +28,14 @@ class StoryAnalysisServiceManager {
      * Stops the service and any background processing.
      */
     fun shutdown() {
-        Log.d(LOG_TAG, "Shutting down service")
-
         synchronized(mutex) {
+            if (!serviceStarted) {
+                return
+            }
+
+            Log.d(LOG_TAG, "Shutting down service")
             service?.stop()
+            service = null
         }
     }
 
@@ -39,13 +43,12 @@ class StoryAnalysisServiceManager {
      * Starts the service.
      */
     fun start(context: Context) {
-        Log.d(LOG_TAG, "Starting service")
-
         synchronized(mutex) {
             if (serviceStarted) {
                 return
             }
 
+            Log.d(LOG_TAG, "Starting service")
             serviceStarted = true
         }
 
