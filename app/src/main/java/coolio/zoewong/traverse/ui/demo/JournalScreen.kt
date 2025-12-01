@@ -47,6 +47,7 @@ import coolio.zoewong.traverse.model.*
 import android.speech.tts.TextToSpeech
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.VolumeMute
+import androidx.compose.ui.graphics.Color
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
 
@@ -304,7 +305,7 @@ fun JournalScreen(
                             Text(
                                 text = timeText,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
+                                color = Color.White
                             )
 
                             m.text?.let { text ->
