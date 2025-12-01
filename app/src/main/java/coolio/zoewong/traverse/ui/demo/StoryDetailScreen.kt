@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.SubtitlesOff
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -39,7 +41,8 @@ import java.util.Locale
 fun StoryDetailScreen(
     story: Story,
     onBack: () -> Unit,
-    onAddToStory: () -> Unit
+    onAddToStory: () -> Unit,
+    showSummary: Boolean,
 ) {
     // 从 Room 里读出的 segment 列表
     val storiesManager = getStoriesManager()
@@ -76,7 +79,7 @@ fun StoryDetailScreen(
                 color = DividerDefaults.color
             )
 
-            if (settings.enableStoryAnalysis && summary != "") {
+            if (settings.enableStoryAnalysis && summary != "" && showSummary) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -160,9 +163,11 @@ fun StoryDetailScreen(
 fun StoryDetailScreenMenu(
     story: Story,
     navController: NavController,
+    summaryVisibleState: MutableState<Boolean>,
 ) {
     val storiesManager = getStoriesManager()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val (summaryVisible, setSummaryVisible) = summaryVisibleState
     var expanded by remember { mutableStateOf(false) }
 
     IconButton(onClick = { expanded = !expanded }) {
@@ -175,6 +180,32 @@ fun StoryDetailScreenMenu(
         if (getSettings().enableStoryAnalysis) {
             DropdownMenuItem(
                 leadingIcon = {
+                    if (summaryVisible) {
+                        Icon(
+                            imageVector = Icons.Filled.SubtitlesOff,
+                            contentDescription = "Text Disabled Icon"
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Subtitles,
+                            contentDescription = "Text Icon"
+                        )
+                    }
+                },
+                text = {
+                    Text(when (summaryVisible) {
+                        true -> "Hide Summary"
+                        false -> "Show Summary"
+                    })
+                },
+                onClick = {
+                    expanded = false
+                    setSummaryVisible(!summaryVisible)
+                }
+            )
+
+            DropdownMenuItem(
+                leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.InterpreterMode,
                         contentDescription = "AI Icon"
@@ -185,6 +216,7 @@ fun StoryDetailScreenMenu(
                     expanded = false
                     CoroutineScope(Dispatchers.IO).launch {
                         storiesManager.reanalyzeStory(story)
+                        setSummaryVisible(true)
                     }
                 }
             )

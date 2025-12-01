@@ -233,6 +233,7 @@ class TraverseDemoActivity : ComponentActivity() {
                                     arguments = listOf(navArgument("id") { type = NavType.LongType })
                                 ) { backStack ->
                                     val id = backStack.arguments!!.getLong("id")
+                                    val summaryVisible = remember(id) { mutableStateOf(false) }
 
                                     val storiesManager = getStoriesManager()
                                     val story = getStories().find { it.id == id }
@@ -372,15 +373,20 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 contentDescription = "Set story location"
                                             )
                                         }
-                                        StoryDetailScreenMenu(story, nav)
+                                        StoryDetailScreenMenu(
+                                            story = story,
+                                            navController = nav,
+                                            summaryVisibleState = summaryVisible,
+                                        )
                                     }
 
-                                    StoryDetailScreen(
-                                        story = story,
-                                        onBack = { nav.popBackStack() },
-                                        onAddToStory = { nav.navigate("add/$id") }
-                                    )
-                                }
+                                StoryDetailScreen(
+                                    story = story,
+                                    onBack = { nav.popBackStack() },
+                                    onAddToStory = { nav.navigate("add/$id") },
+                                    showSummary = summaryVisible.value,
+                                )
+                            }
 
                                 composable(
                                     route = "add/{id}",
