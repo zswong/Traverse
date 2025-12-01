@@ -44,7 +44,9 @@ import androidx.core.content.ContextCompat
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.*
-
+import android.speech.tts.TextToSpeech
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.VolumeMute
 
 data class ChatMsg(val id: Long, val text: String?, val imageUri: String? = null, val timestamp: Long)
 
@@ -62,6 +64,48 @@ fun JournalScreen(
 
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showStoryPicker by remember { mutableStateOf(false) }
+
+    //Text to speech
+    var textToSpeech by remember { mutableStateOf<TextToSpeech?>(null) }
+
+    val localContext = LocalContext.current 
+
+    LaunchedEffect(localContext) {
+        textToSpeech = TextToSpeech(localContext, null).apply {
+            language = java.util.Locale.getDefault()
+        }
+    }
+
+    var isSpeaking by remember { mutableStateOf(false) }
+    var currentSpeakingId by remember { mutableStateOf<Long?>(null) }
+
+    fun speakText(text: String, memoryId: Long) {
+        textToSpeech?.let { tts ->  // Add null check
+            if (isSpeaking && currentSpeakingId == memoryId) {
+                tts.stop()
+                isSpeaking = false
+                currentSpeakingId = null
+            } else {
+                if (isSpeaking) tts.stop()
+                tts.speak(
+                    text,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "memory_$memoryId"
+                )
+                isSpeaking = true
+                currentSpeakingId = memoryId
+            }
+        }
+    }
+
+  
+    DisposableEffect(Unit) {
+        onDispose {
+            textToSpeech?.stop()     
+            textToSpeech?.shutdown()  
+        }
+    }
 
     //Speech to text
     var isListening by remember { mutableStateOf(false) }
@@ -96,7 +140,7 @@ fun JournalScreen(
             Toast.makeText(context, "Microphone permission required", Toast.LENGTH_SHORT).show()
         }
     }
-
+    
 
     // permission launcher for microphone
     val microphonePermissionLauncher = rememberLauncherForActivityResult(
@@ -213,6 +257,7 @@ fun JournalScreen(
             items(sortedMemories, key = { it.id }) { m ->
                 val interactionSource = remember { MutableInteractionSource() }
                 val isSelected = m.id in selectedIds
+                val isThisSpeaking = currentSpeakingId == m.id
 
                 Surface(
                     shape = MaterialTheme.shapes.extraLarge,
@@ -227,16 +272,13 @@ fun JournalScreen(
                             indication = null,
                             onClick = {
                                 if (selectionMode) {
-
                                     selectedIds =
                                         if (isSelected) selectedIds - m.id
                                         else selectedIds + m.id
                                 } else {
-                                    // 非多选模式下点一下现在是 no-op，可以以后做 detail 等
                                 }
                             },
                             onLongClick = {
-
                                 selectedIds =
                                     if (isSelected) selectedIds - m.id
                                     else selectedIds + m.id
@@ -253,11 +295,39 @@ fun JournalScreen(
                                 Locale.getDefault()
                             ).format(Date(m.timestampMillis))
                         }
-                        Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = timeText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+
+                            m.text?.let { text ->
+                                if (text.isNotBlank()) {
+                                    IconButton(
+                                        onClick = { speakText(text, m.id) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            if (isThisSpeaking)
+                                                Icons.Outlined.VolumeUp
+                                            else
+                                                Icons.Outlined.VolumeMute,
+                                            contentDescription = if (isThisSpeaking) "Stop speaking" else "Speak message",
+                                            tint = if (isThisSpeaking)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
                         m.text.let {
                             if (!it.isNullOrBlank()) {
@@ -559,4 +629,3 @@ private fun AttachmentSheetItemTakePhoto(
         Text("Camera")
     }
 }
-
