@@ -24,7 +24,7 @@ interface StoryAnalysisAccess {
      * Watches the StoryAnalysisEntity for changes.
      */
     @Query("SELECT * FROM story_analysis WHERE story_id = :id")
-    fun watch(id: Long): Flow<StoryAnalysisEntity>
+    fun watch(id: Long): Flow<StoryAnalysisEntity?>
 
     /**
      * Inserts a StoryAnalysisEntity into the database, returning its ID.
