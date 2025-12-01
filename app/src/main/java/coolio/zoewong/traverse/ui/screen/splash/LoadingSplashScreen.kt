@@ -20,60 +20,33 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import coolio.zoewong.traverse.R
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun LoadingSplashScreen(
-    iconDescription: String = "App Icon",
-    icon: Drawable? = null,
-    background: Color? = null
+    modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val drawable = remember(context) { icon ?: getIcon(context) }
-
-    Layout(
-        content = {
-            AppIcon(drawable, iconDescription)
-            CircularProgressIndicator()
-        },
-
-        measurePolicy = { measurables, constraints ->
-            val icon = measurables[0].measure(
-                Constraints(
-                    maxWidth = (constraints.maxWidth * 0.35f).toInt(),
-                    maxHeight = (constraints.maxWidth * 0.35f).toInt(),
-                )
-            )
-            val indicator = measurables[1].measure(
-                Constraints(
-                    maxWidth = 32.dp.roundToPx(),
-                    maxHeight = 32.dp.roundToPx(),
-                )
-            )
-            layout(constraints.maxWidth, constraints.maxHeight) {
-                val iconTop = constraints.maxHeight / 2 - icon.height / 2
-                val iconBottom = iconTop + icon.height
-
-                // Bottom 2/3rds, or 24dp after the icon.
-                var indicatorTop = (constraints.maxHeight / 3 * 2) - indicator.height / 2
-                if (indicatorTop < (iconBottom + 24.dp.roundToPx())) {
-                    indicatorTop = iconBottom + 24.dp.roundToPx()
-                }
-
-                icon.place(
-                    x = constraints.maxWidth / 2 - icon.width / 2,
-                    y = iconTop,
-                )
-                indicator.place(
-                    x = constraints.maxWidth / 2 - indicator.width / 2,
-                    y = indicatorTop,
-                )
-            }
-        },
-
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .blockAllPointerInputs()
-            .background(background ?: MaterialTheme.colorScheme.background)
-    )
+            .background(Color(0xFF2196F3)) // Blue color
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "TRAVERSE",
+            color = Color.White,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp
+        )
+    }
 }
 
 @Composable
@@ -114,13 +87,5 @@ fun Modifier.blockAllPointerInputs(): Modifier {
 @Preview(widthDp = 411, heightDp = 917)
 @Composable
 fun LoadingSplashScreenPreview() {
-    val context = LocalContext.current
-    val theme = context.theme
-
-    LoadingSplashScreen(
-        icon = context.resources.getDrawable(
-            R.mipmap.ic_launcher_round,
-            theme,
-        )
-    )
+    LoadingSplashScreen()
 }
