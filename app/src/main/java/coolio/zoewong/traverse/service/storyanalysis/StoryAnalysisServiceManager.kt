@@ -7,6 +7,10 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import coolio.zoewong.traverse.model.Story
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class StoryAnalysisServiceManager {
     private var mutex = object {}
@@ -18,6 +22,7 @@ class StoryAnalysisServiceManager {
     private var serviceStarted = false
 
     private var queue = StoryAnalysisServiceQueue()
+    private var eventListenJob: Job? = null
 
     /**
      * Stops the service and any background processing.
@@ -65,11 +70,20 @@ class StoryAnalysisServiceManager {
             serviceBinder: IBinder?
         ) {
             Log.d(LOG_TAG, "Connected to Service")
+
             synchronized(mutex) {
-                service = (serviceBinder as StoryAnalysisService.Binder).apply {
-                    setQueue(queue)
-                }
                 serviceStarted = true
+                service = (serviceBinder as StoryAnalysisService.Binder).apply {
+                    val eventFlow = watchEvents()
+                    eventListenJob = CoroutineScope(Dispatchers.IO).launch {
+                        eventFlow.collect { event ->
+                            Log.d(LOG_TAG, "Received event from service: $event")
+                        }
+                    }
+
+                    setQueue(queue)
+                    acknowledgeBind()
+                }
             }
         }
 
@@ -78,6 +92,7 @@ class StoryAnalysisServiceManager {
             synchronized(mutex) {
                 service = null
                 serviceStarted = false
+                eventListenJob = null
             }
 
         }
