@@ -16,12 +16,18 @@ import coolio.zoewong.traverse.ai.ModelExtractor
 import coolio.zoewong.traverse.database.TraverseRepository
 import coolio.zoewong.traverse.notifications.NextNotificationId
 import coolio.zoewong.traverse.notifications.NotificationChannels
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisEvent.StoryAnalysisCancelled
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisEvent.StoryAnalysisFailed
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisEvent.StoryAnalysisFinished
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisEvent.StoryAnalysisStarted
 import coolio.zoewong.traverse.util.MutableWaitFor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
@@ -43,6 +49,8 @@ class StoryAnalysisService : Service() {
     private lateinit var queue: StoryAnalysisServiceQueue
     private lateinit var inferenceModel: InferenceModel
     private val waitForQueueSetup = MutableWaitFor<Unit>()
+    private val waitForBindAcknowledgement = MutableWaitFor<Unit>()
+    private val events = MutableSharedFlow<StoryAnalysisEvent>(1)
 
 
     /**
@@ -58,12 +66,21 @@ class StoryAnalysisService : Service() {
             inferenceModel.initialize()
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Failed to initialize model", e)
+            emitEvent(StoryAnalysisEvent.ModelInitializationFailed(e))
             stopSelf()
             return
         }
 
         waitForQueueSetup()
         serviceMainLoop(db)
+    }
+
+    /**
+     * Emits an event to the service manager instance.
+     */
+    private suspend fun emitEvent(event: StoryAnalysisEvent) {
+        waitForBindAcknowledgement()
+        events.emit(event)
     }
 
     /**
@@ -88,7 +105,23 @@ class StoryAnalysisService : Service() {
             val waitForStoryId = MutableWaitFor<Long>()
             val processingJob = CoroutineScope(Dispatchers.Default).launch {
                 delay(1000) // Debounce
-                analyzeStory(db, waitForStoryId())
+                val storyId = waitForStoryId()
+                var exception: Throwable? = null
+                try {
+                    emitEvent(StoryAnalysisStarted(storyId))
+                    analyzeStory(db, storyId)
+                } catch (e: Throwable) {
+                    exception = e
+                } finally {
+                    val cancelled = !currentCoroutineContext().isActive
+                    emitEvent(
+                        when {
+                            cancelled -> StoryAnalysisCancelled(storyId)
+                            exception != null -> StoryAnalysisFailed(storyId, exception)
+                            else -> StoryAnalysisFinished(storyId)
+                        }
+                    )
+                }
             }
 
             // Get the next story from the queue.
@@ -123,7 +156,10 @@ class StoryAnalysisService : Service() {
         val memories = db.stories.getMemoriesOf(story)
 
         if (analysis.lastAnalyzedMemoryId == analysis.latestMemoryId) {
-            Log.i(LOG_TAG, "Story #${story.id} already analyzed: memory=${analysis.latestMemoryId}, analyzed=${analysis.lastAnalyzedMemoryId}")
+            Log.i(
+                LOG_TAG,
+                "Story #${story.id} already analyzed: memory=${analysis.latestMemoryId}, analyzed=${analysis.lastAnalyzedMemoryId}"
+            )
             return
         }
 
@@ -185,7 +221,7 @@ class StoryAnalysisService : Service() {
             serviceMain()
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -231,6 +267,22 @@ class StoryAnalysisService : Service() {
 
 
     inner class Binder : android.os.Binder() {
+
+        /**
+         * Called by the StoryAnalysisServiceManager to acknowledge the service being bound.
+         * It can not emit events until this is called.
+         */
+        fun acknowledgeBind() {
+            Log.d(LOG_TAG, "Manager acknowledged service binding")
+            waitForBindAcknowledgement.done(Unit)
+        }
+
+        /**
+         * Returns a flow of StoryAnalysisEvents.
+         */
+        fun watchEvents(): SharedFlow<StoryAnalysisEvent> {
+            return events
+        }
 
         /**
          * Stops the service.
