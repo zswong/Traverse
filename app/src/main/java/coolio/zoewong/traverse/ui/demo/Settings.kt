@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.ModelTraining
 import coolio.zoewong.traverse.ui.state.getSettings
 import coolio.zoewong.traverse.ui.state.getSettingsManager
+import coolio.zoewong.traverse.ui.state.isStoryAnalysisSupported
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -141,10 +142,15 @@ fun SettingsScreen(
             )
 
             // Story Analysis
+            val storyAnalysisSupported = isStoryAnalysisSupported()
             SettingsItem(
                 icon = Icons.Default.InterpreterMode,
                 title = "Story Summaries",
-                subtitle = "Use on-device AI to summarize stories.",
+                subtitle = when (storyAnalysisSupported) {
+                    true -> "Use on-device AI to summarize stories."
+                    false -> "Not supported on this device."
+                },
+                enabled = storyAnalysisSupported,
                 onClick = {
                     settingsManager.changeSettings(
                         settings.copy(enableStoryAnalysis = !settings.enableStoryAnalysis)
@@ -153,6 +159,7 @@ fun SettingsScreen(
                 trailing = {
                     Switch(
                         checked = settings.enableStoryAnalysis,
+                        enabled = isStoryAnalysisSupported(),
                         onCheckedChange = {
                             settingsManager.changeSettings(
                                 settings.copy(enableStoryAnalysis = it)
@@ -328,16 +335,20 @@ fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     Card(
-        onClick = { onClick?.invoke() },
+        onClick = { if (enabled) onClick?.invoke() },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        enabled = enabled,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceDim,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

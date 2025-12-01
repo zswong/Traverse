@@ -10,7 +10,10 @@ import coolio.zoewong.traverse.model.Story
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 class StoryAnalysisServiceManager {
     private var mutex = object {}
@@ -22,7 +25,7 @@ class StoryAnalysisServiceManager {
     private var serviceStarted = false
 
     private var queue = StoryAnalysisServiceQueue()
-    private var eventListenJob: Job? = null
+    private var events = MutableSharedFlow<StoryAnalysisEvent>(1)
 
     /**
      * Stops the service and any background processing.
@@ -77,15 +80,8 @@ class StoryAnalysisServiceManager {
             synchronized(mutex) {
                 serviceStarted = true
                 service = (serviceBinder as StoryAnalysisService.Binder).apply {
-                    val eventFlow = watchEvents()
-                    eventListenJob = CoroutineScope(Dispatchers.IO).launch {
-                        eventFlow.collect { event ->
-                            Log.d(LOG_TAG, "Received event from service: $event")
-                        }
-                    }
-
                     setQueue(queue)
-                    acknowledgeBind()
+                    setEventEmitter(events)
                 }
             }
         }
@@ -95,10 +91,16 @@ class StoryAnalysisServiceManager {
             synchronized(mutex) {
                 service = null
                 serviceStarted = false
-                eventListenJob = null
             }
 
         }
+    }
+
+    /**
+     * Returns a flow of StoryAnalysisEvents.
+     */
+    fun getEvents(): SharedFlow<StoryAnalysisEvent> {
+        return events
     }
 
     companion object {
