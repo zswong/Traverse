@@ -47,10 +47,10 @@ class StoryAnalysisService : Service() {
     private lateinit var notification: Notification
 
     private lateinit var queue: StoryAnalysisServiceQueue
+    private lateinit var events: MutableSharedFlow<StoryAnalysisEvent>
     private lateinit var inferenceModel: InferenceModel
     private val waitForQueueSetup = MutableWaitFor<Unit>()
-    private val waitForBindAcknowledgement = MutableWaitFor<Unit>()
-    private val events = MutableSharedFlow<StoryAnalysisEvent>(1)
+    private val waitForEventsSetup = MutableWaitFor<Unit>()
 
 
     /**
@@ -79,7 +79,7 @@ class StoryAnalysisService : Service() {
      * Emits an event to the service manager instance.
      */
     private suspend fun emitEvent(event: StoryAnalysisEvent) {
-        waitForBindAcknowledgement()
+        waitForEventsSetup()
         events.emit(event)
     }
 
@@ -265,24 +265,7 @@ class StoryAnalysisService : Service() {
         }
     }
 
-
     inner class Binder : android.os.Binder() {
-
-        /**
-         * Called by the StoryAnalysisServiceManager to acknowledge the service being bound.
-         * It can not emit events until this is called.
-         */
-        fun acknowledgeBind() {
-            Log.d(LOG_TAG, "Manager acknowledged service binding")
-            waitForBindAcknowledgement.done(Unit)
-        }
-
-        /**
-         * Returns a flow of StoryAnalysisEvents.
-         */
-        fun watchEvents(): SharedFlow<StoryAnalysisEvent> {
-            return events
-        }
 
         /**
          * Stops the service.
@@ -297,6 +280,14 @@ class StoryAnalysisService : Service() {
         fun setQueue(queue: StoryAnalysisServiceQueue) {
             this@StoryAnalysisService.queue = queue
             waitForQueueSetup.done(Unit)
+        }
+
+        /**
+         * Returns a flow of StoryAnalysisEvents.
+         */
+        fun setEventEmitter(events: MutableSharedFlow<StoryAnalysisEvent>) {
+            this@StoryAnalysisService.events = events
+            waitForEventsSetup.done(Unit)
         }
 
     }
