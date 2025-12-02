@@ -34,12 +34,21 @@ import androidx.core.content.ContextCompat
 import android.Manifest
 import android.content.pm.PackageManager
 import android.content.Context
+import androidx.compose.material.icons.filled.InterpreterMode
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.text.style.TextAlign
+import coolio.zoewong.traverse.ui.state.getSettings
+import coolio.zoewong.traverse.ui.state.getSettingsManager
+import coolio.zoewong.traverse.ui.state.isStoryAnalysisSupported
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit
 ) {
+    val settings = getSettings()
+    val settingsManager = getSettingsManager()
+
     val context = LocalContext.current
     val isDarkMode = ThemeManager.isDarkMode
 
@@ -179,6 +188,67 @@ fun SettingsScreen(
                 }
             )
 
+            // Story Analysis Section
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "Story Analysis (Beta)",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Story Analysis
+            val storyAnalysisSupported = isStoryAnalysisSupported()
+            SettingsItem(
+                icon = Icons.Default.InterpreterMode,
+                title = "Summarize Stories",
+                subtitle = when (storyAnalysisSupported) {
+                    true -> "Use on-device AI to summarize stories."
+                    false -> "Not supported on this device."
+                },
+                enabled = storyAnalysisSupported,
+                onClick = {
+                    settingsManager.changeSettings(
+                        settings.copy(enableStoryAnalysis = !settings.enableStoryAnalysis)
+                    )
+                },
+                trailing = {
+                    Switch(
+                        checked = settings.enableStoryAnalysis,
+                        enabled = isStoryAnalysisSupported(),
+                        onCheckedChange = {
+                            settingsManager.changeSettings(
+                                settings.copy(enableStoryAnalysis = it)
+                            )
+                        }
+                    )
+                }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Subtitles,
+                title = "Show Summary",
+                subtitle = when (settings.enableStoryAnalysis) {
+                    true -> "Show the story summary by default."
+                    false -> "Story summaries must be enabled."
+                },
+                enabled = settings.enableStoryAnalysis,
+                onClick = {
+                    settingsManager.changeSettings(
+                        settings.copy(showStorySummaryByDefault = !settings.showStorySummaryByDefault)
+                    )
+                },
+                trailing = {
+                    Switch(
+                        checked = settings.showStorySummaryByDefault,
+                        enabled = settings.enableStoryAnalysis,
+                        onCheckedChange = {
+                            settingsManager.changeSettings(
+                                settings.copy(showStorySummaryByDefault = it)
+                            )
+                        }
+                    )
+                }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -369,16 +439,20 @@ fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
+    enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
     Card(
-        onClick = { onClick?.invoke() },
+        onClick = { if (enabled) onClick?.invoke() },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
+        enabled = enabled,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceDim,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
