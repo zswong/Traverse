@@ -41,4 +41,12 @@ sealed interface StoryAnalysisEvent {
         val storyId: Long,
     ) : StoryAnalysisEvent
 
+    /**
+     * Progress update for a story analysis.
+     */
+    data class StoryAnalysisProgressUpdate(
+        val storyId: Long,
+        val progress: Float,
+    ) : StoryAnalysisEvent
+
 }

@@ -2,7 +2,6 @@ package coolio.zoewong.traverse.service.storyanalysis
 
 import android.util.Log
 import coolio.zoewong.traverse.util.MutableWaitFor
-import coolio.zoewong.traverse.util.WaitFor
 import java.io.Closeable
 import java.util.LinkedList
 
@@ -59,6 +58,24 @@ class StoryAnalysisServiceQueue {
     suspend fun waitUntilNotEmpty() {
         val waitFor = synchronized(mutex) { waitForNotEmpty }
         waitFor()
+    }
+
+    /**
+     * Returns true if the queue contains the given story.
+     */
+    fun contains(storyId: Long): Boolean {
+        synchronized(mutex) {
+            return queuedItems.contains(storyId)
+        }
+    }
+
+    /**
+     * Returns true if a HoldGuard is held for the given story (i.e. the service is processing it).
+     */
+    fun holding(storyId: Long): Boolean {
+        synchronized(mutex) {
+            return heldItems.containsKey(storyId)
+        }
     }
 
     /**

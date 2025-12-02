@@ -1,10 +1,10 @@
 package coolio.zoewong.traverse.ui.demo
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.MoreVert
@@ -23,17 +23,15 @@ import coil.compose.AsyncImage
 import coolio.zoewong.traverse.model.Memory
 import coolio.zoewong.traverse.model.Story
 import coolio.zoewong.traverse.model.*
+import coolio.zoewong.traverse.service.storyanalysis.StoryAnalysisEvent
 import coolio.zoewong.traverse.ui.provider.getStoriesManager
-import coolio.zoewong.traverse.ui.state.DatabaseState
-import coolio.zoewong.traverse.ui.state.LoadStatus
 import coolio.zoewong.traverse.ui.state.getSettings
+import coolio.zoewong.traverse.ui.state.getStoryAnalysisService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -166,9 +164,35 @@ fun StoryDetailScreenMenu(
     summaryVisibleState: MutableState<Boolean>,
 ) {
     val storiesManager = getStoriesManager()
+    val storyAnalysisService = getStoryAnalysisService()
     var showDeleteDialog by remember { mutableStateOf(false) }
     val (summaryVisible, setSummaryVisible) = summaryVisibleState
     var expanded by remember { mutableStateOf(false) }
+
+    var isAnalysisQueued by remember { mutableStateOf(false) }
+    var isAnalysisRunning by remember { mutableStateOf(false) }
+    var analysisProgress by remember { mutableStateOf(0f) }
+
+    fun checkAnalysisState() {
+        isAnalysisQueued = storyAnalysisService.isQueued(story)
+        isAnalysisRunning = storyAnalysisService.isProcessing(story)
+        Log.d("StoryDetailScreenMenu", "isAnalysisQueued: $isAnalysisQueued, isAnalysisRunning: $isAnalysisRunning")
+    }
+
+    LaunchedEffect(story, storyAnalysisService) {
+        storyAnalysisService.getEvents().collect {
+            checkAnalysisState()
+            when (it) {
+                is StoryAnalysisEvent.StoryAnalysisFinished -> if (it.storyId == story.id) {
+                    isAnalysisRunning = false
+                }
+                is StoryAnalysisEvent.StoryAnalysisProgressUpdate -> if (it.storyId == story.id) {
+                    analysisProgress = it.progress
+                }
+                else -> {}
+            }
+        }
+    }
 
     IconButton(onClick = { expanded = !expanded }) {
         Icon(Icons.Filled.MoreVert, contentDescription = "More options")
@@ -206,17 +230,36 @@ fun StoryDetailScreenMenu(
 
             DropdownMenuItem(
                 leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.InterpreterMode,
-                        contentDescription = "AI Icon"
-                    )
+                    when (true) {
+                        isAnalysisRunning -> CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp).padding(start=2.dp),
+                            trackColor = MaterialTheme.colorScheme.surfaceDim,
+                            strokeWidth = 3.dp,
+                            progress = {
+                                analysisProgress
+                            }
+                        )
+                        isAnalysisQueued -> CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp).padding(start=2.dp),
+                            trackColor = MaterialTheme.colorScheme.surfaceDim,
+                            strokeWidth = 3.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        else -> Icon(
+                            imageVector = Icons.Filled.InterpreterMode,
+                            contentDescription = "AI Icon"
+                        )
+                    }
                 },
                 text = { Text("Re-analyze Story") },
+                enabled = !isAnalysisQueued && !isAnalysisRunning,
                 onClick = {
                     expanded = false
+                    isAnalysisQueued = true
+                    analysisProgress = 0f
                     CoroutineScope(Dispatchers.IO).launch {
                         storiesManager.reanalyzeStory(story)
-                        setSummaryVisible(true)
+                        checkAnalysisState()
                     }
                 }
             )

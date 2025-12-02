@@ -7,13 +7,8 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import coolio.zoewong.traverse.model.Story
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 class StoryAnalysisServiceManager {
     private var mutex = object {}
@@ -68,6 +63,20 @@ class StoryAnalysisServiceManager {
      */
     fun queueForAnalysis(story: Story) {
         queue.enqueue(story.id)
+    }
+
+    /**
+     * Returns true if the story is queued for analysis.
+     */
+    fun isQueued(story: Story): Boolean {
+        return queue.contains(story.id)
+    }
+
+    /**
+     * Returns true if the story is currently being analyzed.
+     */
+    fun isProcessing(story: Story): Boolean {
+        return queue.holding(story.id)
     }
 
     private val connection = object : ServiceConnection {

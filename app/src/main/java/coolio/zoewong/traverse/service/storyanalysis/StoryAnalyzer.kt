@@ -20,6 +20,7 @@ class StoryAnalyzer(
     val inferenceModel: InferenceModel,
     val lastAnalysis: StoryAnalysisEntity,
     val memories: List<MemoryEntity>,
+    val onProgressChange: ((Float) -> Unit)? = null,
 ) {
     private var summary = lastAnalysis.modelSummary
     private val start = when (lastAnalysis.lastAnalyzedMemoryId) {
@@ -40,6 +41,7 @@ class StoryAnalyzer(
         }
 
         Log.d(LOG_TAG, "Analyzing story with ${memories.size} memories.")
+        onProgressChange?.invoke(0.15f) // Appear to do something
 
         // Add the last summary to the prompt.
         addSummaryToPrompt()
@@ -69,11 +71,13 @@ class StoryAnalyzer(
 
             // Add it again with a fresh prompt. If it's still too long, just truncate it.
             analyzeChunk()
+            onProgressChange?.invoke(0.15f + (i.toFloat() / memories.size) * 0.7f)
             addMemoryToPrompt(memory, truncate = true)
         }
 
         if (memoriesInPrompt > 0) {
             analyzeChunk()
+            onProgressChange?.invoke(0.85f)
         }
 
         // If nothing was processed, return the last analysis.
@@ -102,6 +106,7 @@ class StoryAnalyzer(
             .replace(MATCH_CONSECUTIVE_WHITESPACE_REGEX, " ")
             .trim()
 
+        onProgressChange?.invoke(1.0f)
         return lastAnalysis.copy(
             summary = cleanedSummary,
             modelSummary = summary,

@@ -47,7 +47,7 @@ class StoryAnalysisService : Service() {
     private lateinit var notification: Notification
 
     private lateinit var queue: StoryAnalysisServiceQueue
-    private lateinit var events: MutableSharedFlow<StoryAnalysisEvent>
+    private var events: MutableSharedFlow<StoryAnalysisEvent>? = null
     private lateinit var inferenceModel: InferenceModel
     private val waitForQueueSetup = MutableWaitFor<Unit>()
     private val waitForEventsSetup = MutableWaitFor<Unit>()
@@ -80,7 +80,7 @@ class StoryAnalysisService : Service() {
      */
     private suspend fun emitEvent(event: StoryAnalysisEvent) {
         waitForEventsSetup()
-        events.emit(event)
+        events?.emit(event)
     }
 
     /**
@@ -169,7 +169,14 @@ class StoryAnalysisService : Service() {
         }
 
         // Analyze the story in chunks.
-        val analyzer = StoryAnalyzer(inferenceModel, analysis, memories)
+        val analyzer = StoryAnalyzer(
+            inferenceModel,
+            analysis,
+            memories,
+            onProgressChange = {
+                events?.tryEmit(StoryAnalysisEvent.StoryAnalysisProgressUpdate(storyId, it))
+            })
+
         val updatedAnalysis = analyzer.run()
 
         db.stories.updateAnalysis(story, updatedAnalysis)
