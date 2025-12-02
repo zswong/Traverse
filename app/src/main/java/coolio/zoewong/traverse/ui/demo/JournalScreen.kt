@@ -57,7 +57,8 @@ fun JournalScreen(
     memories: List<Memory>,
     stories: List<Story>,
     onSend: (String?, Uri?) -> Unit,
-    onAddToStory: (Memory, Story) -> Unit
+    onAddToStory: (Memory, Story) -> Unit,
+    onDeleteMemories: (List<Memory>) -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
@@ -377,6 +378,20 @@ fun JournalScreen(
                         onClick = { showStoryPicker = true }
                     ) {
                         Text("Add to story")
+                    }
+                    TextButton(
+                        onClick = {
+                            val selectedMemories = sortedMemories.filter { it.id in selectedIds }
+                            if (selectedMemories.isNotEmpty()) {
+                                onDeleteMemories(selectedMemories)
+                                selectedIds = emptySet()
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Delete")
                     }
                 }
             }

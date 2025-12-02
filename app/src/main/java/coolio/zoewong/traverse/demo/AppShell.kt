@@ -175,11 +175,7 @@ fun AppShell(
                             Icon(Icons.Filled.Menu, contentDescription = "menu")
                         }
                     },
-                    actions = actions ?: {
-                        IconButton(onClick = { /* TODO overflow */ }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "more")
-                        }
-                    }
+                    actions = actions ?: { }
                 )
             }
         ) { padding ->

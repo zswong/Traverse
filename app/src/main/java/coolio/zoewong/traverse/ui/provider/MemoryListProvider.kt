@@ -76,6 +76,13 @@ class MemoryListManager(internal var databaseState: DatabaseStateAccessor) {
             it.memories.insert(memory)
         }
     }
+    suspend fun deleteMemories(memories: List<Memory>) {
+        val repo = databaseState.waitForReady()
+        memories.forEach { m ->
+            repo.memories.delete(m.id)
+        }
+    }
+
 }
 
 /**

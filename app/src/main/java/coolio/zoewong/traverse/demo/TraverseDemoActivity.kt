@@ -146,6 +146,11 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 addMemoryToStory(story, memory)
                                             }
                                         },
+                                        onDeleteMemories = { selected ->
+                                            memoriesManager.fromCallback {
+                                                deleteMemories(selected)
+                                            }
+                                        },
                                     )
                                 }
 
