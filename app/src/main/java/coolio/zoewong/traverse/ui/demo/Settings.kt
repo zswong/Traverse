@@ -53,7 +53,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val isDarkMode = ThemeManager.isDarkMode
 
-    val hasCameraPermission = remember {
+    var permissionCheckCacheKey by remember { mutableStateOf(0) }
+    val hasCameraPermission = remember(permissionCheckCacheKey) {
         derivedStateOf {
             ContextCompat.checkSelfPermission(
                 context,
@@ -62,7 +63,7 @@ fun SettingsScreen(
         }
     }
 
-    val hasMicrophonePermission = remember {
+    val hasMicrophonePermission = remember(permissionCheckCacheKey) {
         derivedStateOf {
             ContextCompat.checkSelfPermission(
                 context,
@@ -74,11 +75,13 @@ fun SettingsScreen(
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
+        permissionCheckCacheKey++
     }
 
     val microphonePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
+        permissionCheckCacheKey++
     }
 
     val dbState = DatabaseState.current
