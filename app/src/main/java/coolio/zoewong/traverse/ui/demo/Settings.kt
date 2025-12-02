@@ -261,8 +261,8 @@ fun SettingsScreen(
                         enabled = isStoryAnalysisSupported(),
                         onCheckedChange = {
                             when (it) {
-                                true -> settingsManager.changeSettings(settings.copy(enableStoryAnalysis = false))
-                                false -> showSummarizeStoriesDisclaimer = true
+                                false -> settingsManager.changeSettings(settings.copy(enableStoryAnalysis = false))
+                                true -> showSummarizeStoriesDisclaimer = true
                             }
                         }
                     )
