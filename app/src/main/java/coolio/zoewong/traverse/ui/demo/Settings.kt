@@ -34,6 +34,7 @@ import androidx.core.content.ContextCompat
 import android.Manifest
 import android.content.pm.PackageManager
 import android.content.Context
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InterpreterMode
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.text.style.TextAlign
@@ -85,6 +86,7 @@ fun SettingsScreen(
     var showImportConfirm by remember { mutableStateOf(false) }
     var showPrivacyText by remember { mutableStateOf(false) }
     var showTermsText by remember { mutableStateOf(false) }
+    var showSummarizeStoriesDisclaimer by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -207,18 +209,20 @@ fun SettingsScreen(
                 },
                 enabled = storyAnalysisSupported,
                 onClick = {
-                    settingsManager.changeSettings(
-                        settings.copy(enableStoryAnalysis = !settings.enableStoryAnalysis)
-                    )
+                    when (settings.enableStoryAnalysis) {
+                        true -> settingsManager.changeSettings(settings.copy(enableStoryAnalysis = false))
+                        false -> showSummarizeStoriesDisclaimer = true
+                    }
                 },
                 trailing = {
                     Switch(
                         checked = settings.enableStoryAnalysis,
                         enabled = isStoryAnalysisSupported(),
                         onCheckedChange = {
-                            settingsManager.changeSettings(
-                                settings.copy(enableStoryAnalysis = it)
-                            )
+                            when (it) {
+                                true -> settingsManager.changeSettings(settings.copy(enableStoryAnalysis = false))
+                                false -> showSummarizeStoriesDisclaimer = true
+                            }
                         }
                     )
                 }
@@ -416,6 +420,20 @@ fun SettingsScreen(
         )
     }
 
+    @Suppress("AssignedValueIsNeverRead") // false positive
+    if (showSummarizeStoriesDisclaimer) {
+        StoryAnalysisDisclaimerDialog(
+            onDismissRequest = {
+                showSummarizeStoriesDisclaimer = false
+            },
+            onConfirmation = {
+                showSummarizeStoriesDisclaimer = false
+                settingsManager.changeSettings(
+                    settings.copy(enableStoryAnalysis = true)
+                )
+            }
+        )
+    }
 }
 
 // Helper function to check if you can use camera
@@ -489,4 +507,46 @@ fun SettingsItem(
             trailing?.invoke()
         }
     }
+}
+
+@Composable
+private fun StoryAnalysisDisclaimerDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+) {
+    AlertDialog(
+        icon = {
+            Icon(
+                Icons.Default.InterpreterMode,
+                contentDescription = "AI Icon",
+            )
+        },
+        title = {
+            Text(text = "This is a Beta Feature")
+        },
+        text = {
+            Text(text = "It may not work on every device, and it may not generate accurate summaries. You can re-generate summaries from the three-dot menu when viewing a story.")
+        },
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirmation()
+                }
+            ) {
+                Text("Enable")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                }
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
