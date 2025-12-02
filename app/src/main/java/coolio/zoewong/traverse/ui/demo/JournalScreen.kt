@@ -379,7 +379,7 @@ fun JournalScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     TextButton(
-                        enabled = stories.isNotEmpty(),
+                        enabled = selectedIds.isNotEmpty(),
                         onClick = { showStoryPicker = true }
                     ) {
                         Text("Add to story")
