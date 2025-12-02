@@ -151,6 +151,26 @@ class TraverseDemoActivity : ComponentActivity() {
                                                 deleteMemories(selected)
                                             }
                                         },
+                                        onCreateStoryFromMemories = { title, selectedMemories ->
+                                            storiesManager.fromCallback { db ->
+                                                val storyEntity =
+                                                    StoryEntity(
+                                                        id = 0L,
+                                                        title = title,
+                                                        timestamp = System.currentTimeMillis(),
+                                                        coverUri = null,
+                                                        location = null,
+                                                        locationName = null
+                                                    )
+                                                val inserted = db.stories.insert(storyEntity)
+
+                                                selectedMemories.forEach { mem ->
+                                                    val memoryEntity =
+                                                        db.memories.get(mem.id) ?: return@forEach
+                                                    db.stories.addMemory(inserted, memoryEntity)
+                                                }
+                                            }
+                                        }
                                     )
                                 }
 

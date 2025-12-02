@@ -59,6 +59,7 @@ fun JournalScreen(
     onSend: (String?, Uri?) -> Unit,
     onAddToStory: (Memory, Story) -> Unit,
     onDeleteMemories: (List<Memory>) -> Unit,
+    onCreateStoryFromMemories: (String, List<Memory>) -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
     var showAttach by remember { mutableStateOf(false) }
@@ -66,6 +67,10 @@ fun JournalScreen(
 
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showStoryPicker by remember { mutableStateOf(false) }
+
+    //create new story
+    var showCreateStoryDialog by remember { mutableStateOf(false) }
+    var newStoryTitle by remember { mutableStateOf("") }
 
     //Text to speech
     var textToSpeech by remember { mutableStateOf<TextToSpeech?>(null) }
@@ -455,7 +460,15 @@ fun JournalScreen(
             title = { Text("Add to a story") },
             text = {
                 if (stories.isEmpty()) {
-                    Text("You don't have any stories yet.\nCreate a story first.")
+                    Column {
+                        Text("You don't have any stories yet.\nCreate a story first.")
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = {
+                            showCreateStoryDialog = true
+                        }) {
+                            Text("Create New Story")
+                        }
+                    }
                 } else {
                     Column {
                         Text(
@@ -463,7 +476,16 @@ fun JournalScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(8.dp))
+                        TextButton(
+                            onClick = {
+                                showCreateStoryDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Create New Story")
+                        }
 
+                        Spacer(Modifier.height(4.dp))
                         LazyColumn(
                             modifier = Modifier.heightIn(max = 260.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -519,6 +541,58 @@ fun JournalScreen(
             }
         )
     }
+
+    if (showCreateStoryDialog && selectedIds.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = {
+                showCreateStoryDialog = false
+            },
+            title = { Text("Create new story") },
+            text = {
+                OutlinedTextField(
+                    value = newStoryTitle,
+                    onValueChange = { newStoryTitle = it },
+                    label = { Text("Story title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newStoryTitle.isNotBlank()) {
+                            val selectedMemories =
+                                memories.filter { it.id in selectedIds }
+
+                            if (selectedMemories.isNotEmpty()) {
+                                onCreateStoryFromMemories(
+                                    newStoryTitle,
+                                    selectedMemories
+                                )
+                            }
+
+                            newStoryTitle = ""
+                            selectedIds = emptySet()
+                            showCreateStoryDialog = false
+                            showStoryPicker = false
+                        }
+                    }
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showCreateStoryDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 
