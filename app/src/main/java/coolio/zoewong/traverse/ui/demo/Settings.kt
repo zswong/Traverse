@@ -36,6 +36,7 @@ import android.content.pm.PackageManager
 import android.content.Context
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InterpreterMode
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.text.style.TextAlign
 import coolio.zoewong.traverse.ui.state.getSettings
@@ -72,6 +73,15 @@ fun SettingsScreen(
         }
     }
 
+    val hasLocationPermission = remember(permissionCheckCacheKey) {
+        derivedStateOf {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -80,6 +90,12 @@ fun SettingsScreen(
 
     val microphonePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        permissionCheckCacheKey++
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
         permissionCheckCacheKey++
     }
@@ -166,6 +182,25 @@ fun SettingsScreen(
                 "Permissions",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Location Access
+            SettingsItem(
+                icon = Icons.Default.LocationOn,
+                title = "Location Access",
+                subtitle = if (hasLocationPermission.value) "Allowed" else "Not allowed - tap to request",
+                onClick = {
+                    if (hasLocationPermission.value) {
+                        // Already granted
+                    } else {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                            ),
+                        )
+                    }
+                }
             )
 
             // Camera Access
