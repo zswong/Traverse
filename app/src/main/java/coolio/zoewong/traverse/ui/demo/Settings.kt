@@ -151,6 +151,9 @@ fun SettingsScreen(
                             ThemeManager.toggleTheme(context)
                         }
                     )
+                },
+                onClick = {
+                    ThemeManager.toggleTheme(context)
                 }
             )
 
@@ -271,7 +274,11 @@ fun SettingsScreen(
                 icon = Icons.Default.Backup,
                 title = "Export backup",
                 subtitle = "Save memories to JSON file        ",
-                onClick = null,
+                onClick = {
+                    exportLauncher.launch(
+                        "traverse-backup-${System.currentTimeMillis()}.json"
+                    )
+                },
                 trailing = {
                     TextButton(
                         onClick = {
@@ -291,7 +298,9 @@ fun SettingsScreen(
                 icon = Icons.Default.Backup,
                 title = "Import backup",
                 subtitle = "Restore memories from JSON file",
-                onClick = null,
+                onClick = {
+                    importLauncher.launch(arrayOf("application/json"))
+                },
                 trailing = {
                     TextButton(
                         onClick = {
@@ -299,7 +308,6 @@ fun SettingsScreen(
                         },
                     ) {
                         Text("Import",maxLines = 1)
-
                     }
                 }
             )
